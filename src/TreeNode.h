@@ -35,11 +35,15 @@ public:
 
     std::string getActivity() const;
 
-    void addChild(std::shared_ptr<TreeNode> child);
-
     std::unordered_map<std::string, bool> &getLetters();
 
+    void addChild(std::shared_ptr<TreeNode> child);
+
     std::vector<std::shared_ptr<TreeNode>> &getChildren();
+
+    void fillLetterMaps();
+
+    void printTree(int level = 0);
 
 private:
     static int numberOfNodes;
