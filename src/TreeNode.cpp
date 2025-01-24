@@ -1,7 +1,7 @@
 #include "TreeNode.h"
 #include <iostream>
 #include <unordered_map>
-#include <memory> 
+#include <memory>
 
 int TreeNode::numberOfNodes = 0;
 std::unordered_map<int, std::unordered_map<std::string, int>> costTable;
@@ -19,43 +19,80 @@ TreeNode::TreeNode(Operation operation)
 TreeNode::TreeNode(Operation operation, std::string activity)
     : letters(), children(), activity(activity), operation(operation), id(++numberOfNodes)
 {
-    if (operation == ACTIVITY) {
+    if (operation == ACTIVITY)
+    {
         letters[activity] = true;
     }
 }
 
-int TreeNode::getNumberOfNodes() {
+int TreeNode::getNumberOfNodes()
+{
     return numberOfNodes;
 }
 
-int TreeNode::getId() const {
+int TreeNode::getId() const
+{
     return id;
 }
 
-void TreeNode::setId(int newId) {
+void TreeNode::setId(int newId)
+{
     id = newId;
 }
 
-Operation TreeNode::getOperation() const {
+Operation TreeNode::getOperation() const
+{
     return operation;
 }
 
-void TreeNode::setOperation(Operation newOperation) {
+void TreeNode::setOperation(Operation newOperation)
+{
     operation = newOperation;
 }
 
-std::string TreeNode::getActivity() const {
+std::string TreeNode::getActivity() const
+{
     return activity;
 }
 
-void TreeNode::addChild(std::shared_ptr<TreeNode> child) {
+void TreeNode::addChild(std::shared_ptr<TreeNode> child)
+{
     children.push_back(child);
 }
 
-std::unordered_map<std::string, bool>& TreeNode::getLetters() {
+std::unordered_map<std::string, bool> &TreeNode::getLetters()
+{
     return letters;
 }
 
-std::vector<std::shared_ptr<TreeNode>>& TreeNode::getChildren()  {
+std::vector<std::shared_ptr<TreeNode>> &TreeNode::getChildren()
+{
     return children;
+}
+
+void TreeNode::fillLetterMaps()
+{
+
+    if (this->getOperation() == ACTIVITY || this->getOperation() == SILENT_ACTIVITY)
+    {
+        return;
+    }
+
+    for (auto &child : this->getChildren())
+    {
+        child->fillLetterMaps();
+        for (const auto &[key, value] : child->getLetters())
+        {
+            this->getLetters()[key] = value;
+        }
+    }
+}
+
+void TreeNode::printTree(int level)
+{
+    std::cout << std::string(level * 2, ' ') << "Node ID: " << this->getId() << ", Operation: " << this->getOperation() << std::endl;
+    for (auto &child : this->getChildren())
+    {
+        child->printTree(level + 1);
+    }
 }
