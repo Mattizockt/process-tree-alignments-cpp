@@ -4,8 +4,9 @@
 #include <unordered_map>
 #include <string>
 #include <vector>
+#include <memory>
 
-extern std::unordered_map<std::string, std::unordered_map<std::string, int>> costTable;
+extern std::unordered_map<int, std::unordered_map<std::string, int>> costTable;
 
 enum Operation
 {
@@ -22,20 +23,23 @@ class TreeNode
 public:
     TreeNode();
     TreeNode(Operation operation);
+    TreeNode(Operation operation, std::string activity);
 
     static int getNumberOfNodes();
 
     int getId() const;
-    void setId(int& newId);
+    void setId(int newId);
 
     Operation getOperation() const;
-    void setOperation(Operation& newOperation);
+    void setOperation(Operation newOperation);
 
     std::string getActivity() const;
 
-    std::unordered_map<std::string, bool>& getLetters();
+    void addChild(std::shared_ptr<TreeNode> child);
 
-    std::vector<std::reference_wrapper<TreeNode>>& getChildren();
+    std::unordered_map<std::string, bool> &getLetters();
+
+    std::vector<std::shared_ptr<TreeNode>> &getChildren();
 
 private:
     static int numberOfNodes;
@@ -43,7 +47,7 @@ private:
     Operation operation;
     std::string activity;
     std::unordered_map<std::string, bool> letters;
-    std::vector<std::reference_wrapper<TreeNode>> children;
+    std::vector<std::shared_ptr<TreeNode>> children;
 };
 
 #endif // TREENODE_H
