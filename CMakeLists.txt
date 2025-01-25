@@ -3,7 +3,7 @@ project(process-tree-alignments-cpp)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(process-tree-alignments-cpp src/main.cpp src/TreeNode.cpp src/utils.cpp) 
+add_executable(process-tree-alignments-cpp src/main.cpp src/treeNode.cpp src/utils.cpp) 
 
 include(FetchContent)
 FetchContent_Declare(
@@ -13,9 +13,9 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(Catch2)
 
-add_executable(unit-tests tests/test.cpp)
+add_executable(unit-tests tests/test.cpp src/treeNode.cpp src/utils.cpp) # Include necessary files
 target_link_libraries(unit-tests PRIVATE Catch2::Catch2WithMain)
 
-include(CTest) # Enable CTest for test integration
-include(Catch) # Use Catch's CMake utilities
+include(CTest)
+include(Catch)
 catch_discover_tests(unit-tests)

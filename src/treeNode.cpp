@@ -1,4 +1,4 @@
-#include "TreeNode.h"
+#include "treeNode.h"
 #include <iostream>
 #include <unordered_map>
 #include <memory>
@@ -90,7 +90,7 @@ void TreeNode::fillLetterMaps()
 
 void TreeNode::printTree(int level)
 {
-    std::cout << std::string(level * 2, ' ') << "Node ID: " << this->getId() << ", Operation: " << this->getOperation() << std::endl;
+    std::cout << std::string(level * 2, ' ') << "Node ID: " << this->getId() << ", Operation: " << this->getOperation() << ", Activity (if exists): " << this->activity << std::endl;
     for (auto &child : this->getChildren())
     {
         child->printTree(level + 1);
