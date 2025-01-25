@@ -31,12 +31,15 @@ std::shared_ptr<TreeNode> createExample()
 
     auto child1 = std::make_shared<TreeNode>(PARALLEL);
     auto child2 = std::make_shared<TreeNode>(XOR);
+    auto loopChild = std::make_shared<TreeNode>(REDO_LOOP); // New loop child
 
     auto child3 = std::make_shared<TreeNode>(ACTIVITY, "a");
     auto child4 = std::make_shared<TreeNode>(ACTIVITY, "b");
     auto child5 = std::make_shared<TreeNode>(ACTIVITY, "c");
     auto child6 = std::make_shared<TreeNode>(ACTIVITY, "d");
     auto child7 = std::make_shared<TreeNode>(ACTIVITY, "e");
+    auto child8 = std::make_shared<TreeNode>(ACTIVITY, "f"); // New activity child
+    auto child9 = std::make_shared<TreeNode>(ACTIVITY, "g"); // New activity child
 
     child1->addChild(child3);
     child1->addChild(child4);
@@ -45,8 +48,12 @@ std::shared_ptr<TreeNode> createExample()
     child2->addChild(child5);
     child2->addChild(child6);
 
+    loopChild->addChild(child8); // Adding new activity child to loop child
+    loopChild->addChild(child9); // Adding new activity child to loop child
+
     root->addChild(child1);
     root->addChild(child2);
+    root->addChild(loopChild); // Adding loop child to root
 
     return root;
 }
@@ -71,25 +78,48 @@ void splitHelper(
     std::vector<std::vector<int>> &possibleSplits,
     const int lastIndex)
 {
+    // Full segment computed
     if (position == childPositionsMap.size())
     {
-        if (currentSegment[position - 1] == lastIndex)
-        {
-            possibleSplits.push_back(currentSegment);
-        }
+        possibleSplits.push_back(currentSegment);
         return;
     }
-
-    for (const auto &element : childPositionsMap[position])
+    // we already filled all positions of the segment
+    else if ((currentSegment.size() > 0 && currentSegment.back() == lastIndex))
     {
-        if (position > 0 && currentSegment[position - 1] > element)
-        {
-            continue;
-        }
-
-        currentSegment.push_back(element); 
+        currentSegment.push_back(lastIndex);
         splitHelper(childPositionsMap, currentSegment, position + 1, possibleSplits, lastIndex);
-        currentSegment.pop_back(); 
+        currentSegment.push_back(lastIndex);
+    }
+    // no positions for this child
+    else if (childPositionsMap[position].empty())
+    {
+        // no predecessor
+        if (!currentSegment.empty())
+        {
+            currentSegment.push_back(-1);
+        }
+        // predecessor
+        else
+        {
+            currentSegment.push_back(currentSegment.back());
+        }
+        splitHelper(childPositionsMap, currentSegment, position + 1, possibleSplits, lastIndex);
+    }
+    // there are positions for this child and segment is not full yet
+    else
+    {
+        for (const auto &element : childPositionsMap[position])
+        {
+            if (!currentSegment.empty() && currentSegment.back() > element)
+            {
+                continue;
+            }
+
+            currentSegment.push_back(element);
+            splitHelper(childPositionsMap, currentSegment, position + 1, possibleSplits, lastIndex);
+            currentSegment.pop_back();
+        }
     }
 }
 
@@ -97,13 +127,13 @@ std::vector<std::vector<int>> possibleSplits(std::shared_ptr<TreeNode> node, con
 {
     std::map<char, int> letterChildMap;
     std::map<int, int> idToPosition;
-    std::vector<std::vector<int>> childPositionsMap;
+    std::vector<std::vector<int>> childPositionsMap(node->getChildren().size());
 
     int count = 0;
     for (const auto &child : node->getChildren())
     {
-        childPositionsMap.push_back(std::vector<int>());
         idToPosition[child->getId()] = count;
+
         for (const auto &pair : child->getLetters())
         {
             letterChildMap[pair.first[0]] = child->getId();
@@ -113,16 +143,20 @@ std::vector<std::vector<int>> possibleSplits(std::shared_ptr<TreeNode> node, con
 
     for (int i = 0; i < trace.size(); i++)
     {
-        childPositionsMap[idToPosition[letterChildMap[trace[i]]]].push_back(i);
+        char letter = trace[i];
+        int childId = letterChildMap[letter];
+        int position = idToPosition[childId];
+        childPositionsMap[position].push_back(i);
     }
-    childPositionsMap[count-1].clear();
-    childPositionsMap[count-1].push_back(trace.size()-1);
 
-    std::vector<std::vector<int>> splits;
-    splitHelper(childPositionsMap, std::vector<int>(), 0, splits, trace.size() - 1);
+    childPositionsMap[count - 1].clear();
+    childPositionsMap[count - 1].push_back(trace.size() - 1);
+
+    std::vector<std::vector<int>> possibleSplits;
+    splitHelper(childPositionsMap, std::vector<int>(), 0, possibleSplits, trace.size() - 1);
 
     std::cout << "Possible splits: " << std::endl;
-    printNestedVector(splits);
+    printNestedVector(possibleSplits);
 
-    return splits;
+    return possibleSplits;
 }
