@@ -126,6 +126,7 @@ TEST_CASE("Does possibleSplits work?")
             std::vector<std::vector<int>> splits = possibleSplits(root, trace);
             printNestedVector(splits);
 
+            // TODO problem: even though 1,2,5 and 1,3,5 might belong to the same children they are still outputted. perhaps make it to 1,3,5 in the future. 
             std::vector<std::vector<int>> expected = {
                 {0, 3, 5, 8}, {0, 3, 6, 8}, {0, 4, 5, 8}, {0, 4, 6, 8}, {1, 3, 5, 8}, {1, 3, 6, 8}, {1, 4, 5, 8}, {1, 4, 6, 8}, {2, 3, 5, 8}, {2, 3, 6, 8}, {2, 4, 5, 8}, {2, 4, 6, 8}, {-1, 3, 5, 8}, {-1, 3, 6, 8}, {-1, -1, 5, 8}, {-1, -1, 6, 8}, {-1, -1, -1, 8}};
 
