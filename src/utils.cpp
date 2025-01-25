@@ -1,4 +1,4 @@
-#include "TreeNode.h"
+#include "treeNode.h"
 #include <iostream>
 #include <memory>
 #include <unordered_set>
@@ -84,7 +84,7 @@ void splitHelper(
         possibleSplits.push_back(currentSegment);
         return;
     }
-    // we already filled all positions of the segment
+    // we already occupied all possible posittions of the segment
     else if ((currentSegment.size() > 0 && currentSegment.back() == lastIndex))
     {
         currentSegment.push_back(lastIndex);
@@ -109,6 +109,13 @@ void splitHelper(
     // there are positions for this child and segment is not full yet
     else
     {
+        if (currentSegment.size() > 0 && currentSegment.size() < childPositionsMap.size()-1 && currentSegment.back() != -1)
+        {
+            currentSegment.push_back(currentSegment.back());
+            splitHelper(childPositionsMap, currentSegment, position + 1, possibleSplits, lastIndex);
+            currentSegment.pop_back();
+        }
+        
         for (const auto &element : childPositionsMap[position])
         {
             if (!currentSegment.empty() && currentSegment.back() > element)
@@ -132,6 +139,9 @@ std::vector<std::vector<int>> possibleSplits(std::shared_ptr<TreeNode> node, con
     int count = 0;
     for (const auto &child : node->getChildren())
     {
+        // skip condition
+        childPositionsMap[count].push_back(-1);
+
         idToPosition[child->getId()] = count;
 
         for (const auto &pair : child->getLetters())
@@ -155,6 +165,7 @@ std::vector<std::vector<int>> possibleSplits(std::shared_ptr<TreeNode> node, con
     std::vector<std::vector<int>> possibleSplits;
     splitHelper(childPositionsMap, std::vector<int>(), 0, possibleSplits, trace.size() - 1);
 
+    std::cout << std::endl;
     std::cout << "Possible splits: " << std::endl;
     printNestedVector(possibleSplits);
 
