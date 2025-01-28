@@ -8,32 +8,38 @@
 #include <limits>
 
 // TODO write tests
-int dynAlignActivity(std::shared_ptr<TreeNode> node, const std::string &trace) {
-    if (trace.find(node->getActivity()) == std::string::npos) {
+int dynAlignActivity(std::shared_ptr<TreeNode> node, const std::string &trace)
+{
+    if (trace.find(node->getActivity()) == std::string::npos)
+    {
         return trace.length() + 1;
     }
-    else {
+    else
+    {
         return trace.length() - 1;
     }
 }
 
 // TODO write tests
-int dynAlignSilentActivity(std::shared_ptr<TreeNode> node, const std::string &trace) {
+int dynAlignSilentActivity(std::shared_ptr<TreeNode> node, const std::string &trace)
+{
     return trace.length();
 }
 
 // TODO write tests
-int dynAlignSequence(std::shared_ptr<TreeNode> node, const std::string &trace) {
-    if (trace.length() == 0) {
+int dynAlignSequence(std::shared_ptr<TreeNode> node, const std::string &trace)
+{
+    if (trace.length() == 0)
+    {
         const auto &children = node->getChildren();
-        return std::accumulate(children.begin(), children.end(), 0, [&trace](int sum, const auto &child) {
-            return sum + dynAlign(child, trace);
-        });
+        return std::accumulate(children.begin(), children.end(), 0, [&trace](int sum, const auto &child)
+                               { return sum + dynAlign(child, trace); });
     }
 
     int minCosts = std::numeric_limits<int>::max();
 
-    
+    std::vector<std::vector<int>> segments = possibleSplits(node, trace);
+
     return -1;
 }
 
@@ -47,7 +53,7 @@ int dynAlign(std::shared_ptr<TreeNode> node, const std::string &trace)
             return costTable[node->getId()][trace];
         }
     }
-    
+
     int costs;
     switch (node->getOperation())
     {
@@ -72,7 +78,7 @@ int dynAlign(std::shared_ptr<TreeNode> node, const std::string &trace)
 }
 
 int main()
-{   
+{
     std::shared_ptr<TreeNode> root = createExample();
     root->fillLetterMaps();
     root->printTree();
