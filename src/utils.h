@@ -1,7 +1,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#include "treeNode.h"
+#include "treeProcessor.h"
 #include <map>
 
 std::string pruneInputTrace(std::shared_ptr<TreeNode> node, std::string &trace);
