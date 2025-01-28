@@ -109,13 +109,13 @@ void splitHelper(
     // there are positions for this child and segment is not full yet
     else
     {
-        if (currentSegment.size() > 0 && currentSegment.size() < childPositionsMap.size()-1 && currentSegment.back() != -1)
+        if (currentSegment.size() > 0 && currentSegment.size() < childPositionsMap.size() - 1 && currentSegment.back() != -1)
         {
             currentSegment.push_back(currentSegment.back());
             splitHelper(childPositionsMap, currentSegment, position + 1, possibleSplits, lastIndex);
             currentSegment.pop_back();
         }
-        
+
         for (const auto &element : childPositionsMap[position])
         {
             if (!currentSegment.empty() && currentSegment.back() > element)
@@ -130,6 +130,7 @@ void splitHelper(
     }
 }
 
+// TODO problem: even though 1,2,5 and 1,3,5 might belong to the same children they are still outputted. perhaps make it to 1,3,5 in the future.
 std::vector<std::vector<int>> possibleSplits(std::shared_ptr<TreeNode> node, const std::string &trace)
 {
     std::map<char, int> letterChildMap;
@@ -165,9 +166,9 @@ std::vector<std::vector<int>> possibleSplits(std::shared_ptr<TreeNode> node, con
     std::vector<std::vector<int>> possibleSplits;
     splitHelper(childPositionsMap, std::vector<int>(), 0, possibleSplits, trace.size() - 1);
 
-    std::cout << std::endl;
-    std::cout << "Possible splits: " << std::endl;
-    printNestedVector(possibleSplits);
+    // std::cout << std::endl;
+    // std::cout << "Possible splits: " << std::endl;
+    // printNestedVector(possibleSplits);
 
     return possibleSplits;
 }
