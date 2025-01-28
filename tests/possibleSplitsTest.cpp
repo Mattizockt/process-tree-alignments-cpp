@@ -5,7 +5,7 @@
 
 void testPossibleSplits(const std::shared_ptr<TreeNode> &root, const std::string &trace, const std::vector<std::vector<int>> &expected)
 {
-    auto splits = possibleSplits(root, trace);
+    auto splits = generateSplits(root, trace);
     std::sort(splits.begin(), splits.end());
     auto sortedExpected = expected;
     std::sort(sortedExpected.begin(), sortedExpected.end());
@@ -217,7 +217,7 @@ TEST_CASE("spitTrace")
         std::string trace = "";
         std::vector<int> segment = {-1};
         std::vector<std::string> expected = {""};
-        REQUIRE(splitTrace(trace, segment) == expected);
+        REQUIRE(segmentTrace(trace, segment) == expected);
     }
 
     SECTION("abcdcedffg")
@@ -228,19 +228,19 @@ TEST_CASE("spitTrace")
         {
             std::vector<int> segment = {0, 3, 6, 9};
             std::vector<std::string> expected = {"a", "bcd", "ced", "ffg"};
-            REQUIRE(splitTrace(trace, segment) == expected);
+            REQUIRE(segmentTrace(trace, segment) == expected);
         }
         SECTION("mid empty split")
         {
             std::vector<int> segment = {0, 3, 3, 9};
             std::vector<std::string> expected = {"a", "bcd", "", "cedffg"};
-            REQUIRE(splitTrace(trace, segment) == expected);
+            REQUIRE(segmentTrace(trace, segment) == expected);
         }
         SECTION("start empty split")
         {
             std::vector<int> segment = {-1, -1, 2, 9};
             std::vector<std::string> expected = {"", "", "abc", "dcedffg"};
-            REQUIRE(splitTrace(trace, segment) == expected);
+            REQUIRE(segmentTrace(trace, segment) == expected);
         }
     }
 }
