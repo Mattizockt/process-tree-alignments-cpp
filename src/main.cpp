@@ -40,12 +40,12 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, const std::string &trace)
 
     int minCosts = std::numeric_limits<int>::max();
 
-    std::vector<std::vector<int>> segments = possibleSplits(node, trace);
+    std::vector<std::vector<int>> segments = generateSplits(node, trace);
 
     for (const auto &split : segments)
     {
         int costs = 0;
-        std::vector<std::string> splittedTraces = splitTrace(trace, split);
+        std::vector<std::string> splittedTraces = segmentTrace(trace, split);
 
         for (int i = 0; i < splittedTraces.size(); i++)
         {
@@ -62,6 +62,10 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, const std::string &trace)
     }
 
     return minCosts;
+}
+
+int dynAlignXor() {
+
 }
 
 int dynAlign(std::shared_ptr<TreeNode> node, const std::string &trace)
@@ -110,7 +114,7 @@ int main()
 
     std::string trace = "dbcda";
 
-    possibleSplits(root, trace);
+    generateSplits(root, trace);
     dynAlign(root, trace);
     return 0;
 }
