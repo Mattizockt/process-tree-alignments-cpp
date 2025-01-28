@@ -7,6 +7,8 @@
 #include <numeric>
 #include <limits>
 
+// split the trace into segmentsq
+
 // TODO write tests
 int dynAlignActivity(std::shared_ptr<TreeNode> node, const std::string &trace)
 {
@@ -40,7 +42,26 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, const std::string &trace)
 
     std::vector<std::vector<int>> segments = possibleSplits(node, trace);
 
-    return -1;
+    for (const auto &split : segments)
+    {
+        int costs = 0;
+        std::vector<std::string> splittedTraces = splitTrace(trace, split);
+
+        for (int i = 0; i < splittedTraces.size(); i++)
+        {
+            const auto &children = node->getChildren();
+            for (int j = 0; j < children.size(); j++)
+            {
+                costs += dynAlign(children[i], splittedTraces[i]);
+            }
+        }
+        if (costs < minCosts)
+        {
+            minCosts = costs;
+        }
+    }
+
+    return minCosts;
 }
 
 int dynAlign(std::shared_ptr<TreeNode> node, const std::string &trace)

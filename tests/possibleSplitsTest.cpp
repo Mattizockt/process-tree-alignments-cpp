@@ -209,3 +209,38 @@ TEST_CASE("Does possibleSplits work?")
         }
     }
 }
+
+TEST_CASE("spitTrace")
+{
+    SECTION("Empty trace")
+    {
+        std::string trace = "";
+        std::vector<int> segment = {-1};
+        std::vector<std::string> expected = {""};
+        REQUIRE(splitTrace(trace, segment) == expected);
+    }
+
+    SECTION("abcdcedffg")
+    {
+        std::string trace = "abcdcedffg";
+
+        SECTION("normal split")
+        {
+            std::vector<int> segment = {0, 3, 6, 9};
+            std::vector<std::string> expected = {"a", "bcd", "ced", "ffg"};
+            REQUIRE(splitTrace(trace, segment) == expected);
+        }
+        SECTION("mid empty split")
+        {
+            std::vector<int> segment = {0, 3, 3, 9};
+            std::vector<std::string> expected = {"a", "bcd", "", "cedffg"};
+            REQUIRE(splitTrace(trace, segment) == expected);
+        }
+        SECTION("start empty split")
+        {
+            std::vector<int> segment = {-1, -1, 2, 9};
+            std::vector<std::string> expected = {"", "", "abc", "dcedffg"};
+            REQUIRE(splitTrace(trace, segment) == expected);
+        }
+    }
+}

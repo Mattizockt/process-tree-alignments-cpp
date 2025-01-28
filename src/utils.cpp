@@ -173,7 +173,7 @@ std::vector<std::vector<int>> possibleSplits(std::shared_ptr<TreeNode> node, con
         childPositionsMap[position].push_back(i);
     }
 
-    // TODO perhaps handle case specially if there's -1 in the childPositionsmap and also 0
+    // TODO  perhaps handle case specially if there's -1 in the childPositionsmap and also 0
 
     childPositionsMap[count - 1].clear();
     childPositionsMap[count - 1].push_back(trace.size() - 1);
@@ -186,4 +186,26 @@ std::vector<std::vector<int>> possibleSplits(std::shared_ptr<TreeNode> node, con
     // printNestedVector(possibleSplits);
 
     return possibleSplits;
+}
+
+std::vector<std::string> splitTrace(const std::string &trace, const std::vector<int> &segment)
+{
+    std::vector<std::string> segments;
+    int start = 0;
+
+    for (int i = 0; i < segment.size(); i++)
+    {
+        // TODO improve later, currently unelegant
+        if (segment[i] == -1 || (start >= segment[i] && start != 0))
+        {
+            segments.push_back("");
+        }
+        else {
+               segments.push_back(trace.substr(start, segment[i] - start + 1));
+            start = segment[i] + 1;
+        }
+    }
+
+    // segments.push_back(trace.substr(start, trace.length() - start));
+    return segments;
 }
