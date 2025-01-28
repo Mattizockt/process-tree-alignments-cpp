@@ -3,6 +3,16 @@
 #include "../src/utils.h"
 #include "../src/treeNode.h"
 
+void testPossibleSplits(const std::shared_ptr<TreeNode> &root, const std::string &trace, const std::vector<std::vector<int>> &expected)
+{
+    auto splits = possibleSplits(root, trace);
+    printNestedVector(splits);
+    std::sort(splits.begin(), splits.end());
+    auto sortedExpected = expected;
+    std::sort(sortedExpected.begin(), sortedExpected.end());
+    REQUIRE(splits == sortedExpected);
+}
+
 TEST_CASE("Does possibleSplits work?")
 {
 
@@ -50,32 +60,16 @@ TEST_CASE("Does possibleSplits work?")
         {
 
             std::string trace = "dbcda";
-
-            std::vector<std::vector<int>> splits = possibleSplits(root, trace);
-            printNestedVector(splits);
-
             std::vector<std::vector<int>> expected = {{1, 2, 4}, {1, 3, 4}, {4, 4, 4}, {-1, -1, 4}, {-1, 2, 4}, {-1, 3, 4}, {-1, 0, 4}, {1, 1, 4}};
-
-            std::sort(splits.begin(), splits.end());
-            std::sort(expected.begin(), expected.end());
-
-            REQUIRE(splits == expected);
+            testPossibleSplits(root, trace, expected);
         }
 
         SECTION("dbcdaf")
         {
 
             std::string trace = "dbcdaf";
-
-            std::vector<std::vector<int>> splits = possibleSplits(root, trace);
-            printNestedVector(splits);
-
             std::vector<std::vector<int>> expected = {{1, 2, 5}, {1, 3, 5}, {4, 4, 5}, {-1, -1, 5}, {-1, 2, 5}, {-1, 3, 5}, {-1, 0, 5}, {1, 1, 5}};
-
-            std::sort(splits.begin(), splits.end());
-            std::sort(expected.begin(), expected.end());
-
-            REQUIRE(splits == expected);
+            testPossibleSplits(root, trace, expected);
         }
     }
 
@@ -121,19 +115,32 @@ TEST_CASE("Does possibleSplits work?")
         SECTION("abecdfgi")
         {
 
-            std::string trace = "abecdfgi";
+            std::string trace = "abecdfghi";
+            // TODO problem: even though 1,2,5 and 1,3,5 might belong to the same children they are still outputted. perhaps make it to 1,3,5 in the future.
+            std::vector<std::vector<int>> expected =
+                {{-1, -1, -1, 8}, {-1, -1, 5, 8}, {-1, -1, 6, 8}, {-1, 3, 3, 8}, {-1, 3, 5, 8}, {-1, 3, 6, 8}, {-1, 4, 4, 8}, {-1, 4, 5, 8}, {-1, 4, 6, 8}, {0, 0, 0, 8}, {0, 0, 5, 8}, {0, 0, 6, 8}, {0, 3, 3, 8}, {0, 3, 5, 8}, {0, 3, 6, 8}, {0, 4, 4, 8}, {0, 4, 5, 8}, {0, 4, 6, 8}, {1, 1, 1, 8}, {1, 1, 5, 8}, {1, 1, 6, 8}, {1, 3, 3, 8}, {1, 3, 5, 8}, {1, 3, 6, 8}, {1, 4, 4, 8}, {1, 4, 5, 8}, {1, 4, 6, 8}, {2, 2, 2, 8}, {2, 2, 5, 8}, {2, 2, 6, 8}, {2, 3, 3, 8}, {2, 3, 5, 8}, {2, 3, 6, 8}, {2, 4, 4, 8}, {2, 4, 5, 8}, {2, 4, 6, 8}};
+            testPossibleSplits(root, trace, expected);
+        }
 
-            std::vector<std::vector<int>> splits = possibleSplits(root, trace);
-            printNestedVector(splits);
+        SECTION("aacfhhf")
+        {
+            std::string trace = "aacfhhf";
+            std::vector<std::vector<int>> expected = {{-1, -1, -1, 6}, {-1, -1, 3, 6}, {-1, -1, 6, 6}, {-1, 2, 2, 6}, {-1, 2, 3, 6}, {-1, 2, 6, 6}, {0, 0, 0, 6}, {0, 0, 3, 6}, {0, 0, 6, 6}, {0, 2, 2, 6}, {0, 2, 3, 6}, {0, 2, 6, 6}, {1, 1, 1, 6}, {1, 1, 3, 6}, {1, 1, 6, 6}, {1, 2, 2, 6}, {1, 2, 3, 6}, {1, 2, 6, 6}};
+            testPossibleSplits(root, trace, expected);
+        }
 
-            // TODO problem: even though 1,2,5 and 1,3,5 might belong to the same children they are still outputted. perhaps make it to 1,3,5 in the future. 
-            std::vector<std::vector<int>> expected = {
-                {0, 3, 5, 8}, {0, 3, 6, 8}, {0, 4, 5, 8}, {0, 4, 6, 8}, {1, 3, 5, 8}, {1, 3, 6, 8}, {1, 4, 5, 8}, {1, 4, 6, 8}, {2, 3, 5, 8}, {2, 3, 6, 8}, {2, 4, 5, 8}, {2, 4, 6, 8}, {-1, 3, 5, 8}, {-1, 3, 6, 8}, {-1, -1, 5, 8}, {-1, -1, 6, 8}, {-1, -1, -1, 8}};
+        SECTION("aagghi")
+        {
+            std::string trace = "aagghi";
+            std::vector<std::vector<int>> expected = {{-1, -1, -1, 5}, {-1, -1, 2, 5}, {-1, -1, 3, 5}, {0, 0, 0, 5}, {0, 0, 2, 5}, {0, 0, 3, 5}, {1, 1, 1, 5}, {1, 1, 2, 5}, {1, 1, 3, 5}};
+            testPossibleSplits(root, trace, expected);
+        }
 
-            std::sort(splits.begin(), splits.end());
-            std::sort(expected.begin(), expected.end());
-
-            REQUIRE(splits == expected);
+        SECTION("h")
+        {
+            std::string trace = "h";
+            std::vector<std::vector<int>> expected = {{-1, -1, -1, 0}};
+            testPossibleSplits(root, trace, expected);
         }
     }
 }
