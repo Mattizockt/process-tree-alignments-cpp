@@ -130,7 +130,8 @@ void splitHelper(
     }
 }
 
-// TODO problem: even though 1,2,5 and 1,3,5 might belong to the same children they are still outputted. perhaps make it to 1,3,5 in the future.
+
+// TODO optimizing necessary, too many different maps
 std::vector<std::vector<int>> possibleSplits(std::shared_ptr<TreeNode> node, const std::string &trace)
 {
     std::map<char, int> letterChildMap;
@@ -172,8 +173,7 @@ std::vector<std::vector<int>> possibleSplits(std::shared_ptr<TreeNode> node, con
         childPositionsMap[position].push_back(i);
     }
 
-    // perhaps handle case specially if there's -1 in the childPositionsmap and also 0
-
+    // TODO perhaps handle case specially if there's -1 in the childPositionsmap and also 0
 
     childPositionsMap[count - 1].clear();
     childPositionsMap[count - 1].push_back(trace.size() - 1);
