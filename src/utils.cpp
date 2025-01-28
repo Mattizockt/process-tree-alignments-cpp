@@ -156,9 +156,24 @@ std::vector<std::vector<int>> possibleSplits(std::shared_ptr<TreeNode> node, con
     {
         char letter = trace[i];
         int childId = letterChildMap[letter];
+
+        if (trace.size() > i + 1)
+        {
+            char nextLetter = trace[i + 1];
+            int nextChildId = letterChildMap[nextLetter];
+
+            if (childId == nextChildId)
+            {
+                continue;
+            }
+        }
+
         int position = idToPosition[childId];
         childPositionsMap[position].push_back(i);
     }
+
+    // perhaps handle case specially if there's -1 in the childPositionsmap and also 0
+
 
     childPositionsMap[count - 1].clear();
     childPositionsMap[count - 1].push_back(trace.size() - 1);
