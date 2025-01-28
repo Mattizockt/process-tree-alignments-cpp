@@ -1,7 +1,8 @@
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch_all.hpp>
 #include "../src/utils.h"
-#include "../src/treeNode.h"
+#include "../src/treeProcessor.h"
+#include <iostream>
 
 void testPossibleSplits(const std::shared_ptr<TreeNode> &root, const std::string &trace, const std::vector<std::vector<int>> &expected)
 {
@@ -242,5 +243,42 @@ TEST_CASE("spitTrace")
             std::vector<std::string> expected = {"", "", "abc", "dcedffg"};
             REQUIRE(segmentTrace(trace, segment) == expected);
         }
+        SECTION("ebad")
+        {
+            trace = "ebad";
+            std::vector<int> segment = {2,3};
+            std::vector<std::string> expected = {"eba", "d"};
+            REQUIRE(segmentTrace(trace, segment) == expected);
+        }
+    }
+}
+
+TEST_CASE("dynAlign")
+{
+    auto root = createExample();
+    root->fillLetterMaps(); 
+
+    SECTION("Empty trace")
+    {
+        const std::string trace = "";
+        REQUIRE(dynAlign(root, trace) == 4);
+    }   
+    
+    SECTION("eba")
+    {
+        const std::string trace = "eba";
+        REQUIRE(dynAlign(root, trace) == 1);
+    }   
+
+    SECTION("ebad")
+    {
+        const std::string trace = "ebad";
+        REQUIRE(dynAlign(root, trace) == 0);
+    }   
+
+    SECTION("babebbdddcbb")
+    {
+        const std::string trace = "babebbdddcbb";
+        REQUIRE(dynAlign(root, trace) == 8);
     }
 }

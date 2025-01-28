@@ -54,4 +54,6 @@ private:
     std::vector<std::shared_ptr<TreeNode>> children;
 };
 
+int dynAlign(std::shared_ptr<TreeNode> node, const std::string &trace);
+
 #endif // TREENODE_H
