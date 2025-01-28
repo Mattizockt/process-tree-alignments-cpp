@@ -13,7 +13,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(Catch2)
 
-add_executable(unit-tests tests/test.cpp src/treeNode.cpp src/utils.cpp) # Include necessary files
+add_executable(unit-tests tests/possibleSplitsTest.cpp src/treeNode.cpp src/utils.cpp) # Include necessary files
 target_link_libraries(unit-tests PRIVATE Catch2::Catch2WithMain)
 
 include(CTest)
