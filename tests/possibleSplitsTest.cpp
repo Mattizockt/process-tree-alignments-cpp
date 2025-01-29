@@ -281,4 +281,35 @@ TEST_CASE("dynAlign")
         const std::string trace = "babebbdddcbb";
         REQUIRE(dynAlign(root, trace) == 8);
     }
+    SECTION("loop")
+    {
+        auto root = std::make_shared<TreeNode>(REDO_LOOP);
+        auto rChild = std::make_shared<TreeNode>(SEQUENCE);
+        auto child1 = std::make_shared<TreeNode>(ACTIVITY, "a");
+        auto child2 = std::make_shared<TreeNode>(ACTIVITY, "b");
+        auto child3 = std::make_shared<TreeNode>(ACTIVITY, "f");
+
+        root.get()->addChild(rChild);
+        rChild.get()->addChild(child1);
+        rChild.get()->addChild(child2);
+        root.get()->addChild(child3);
+        root.get()->fillLetterMaps();
+
+        SECTION("abfabfabfabfabfabfabfabf") {
+            const std::string trace = "abfabfabfabfabfabfabfabf";
+            REQUIRE(dynAlign(root, trace) == 0);
+        }
+        SECTION("abababababababab123123abababababf") {
+            const std::string trace = "abababababababab123123abababababf";
+            REQUIRE(dynAlign(root, trace) == 17);
+        }
+        SECTION("abbbbf") {
+            const std::string trace = "abbbbf";
+            REQUIRE(dynAlign(root, trace) == 2);
+        }
+        SECTION("") {
+            const std::string trace = "";
+            REQUIRE(dynAlign(root, trace) == 2);
+        }
+    }
 }

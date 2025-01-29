@@ -178,22 +178,27 @@ int dynAlignParallel(std::shared_ptr<TreeNode> node, const std::string &trace)
     std::vector<std::string> subTraces(children.size(), "");
     int unmatched = 0;
 
-    for (char c : trace) {
+    for (char c : trace)
+    {
         bool matched = false;
-        for (size_t i = 0; i < children.size(); i++) {
-            if (children[i]->getLetters().count(std::string(1, c)) == 1) {
+        for (size_t i = 0; i < children.size(); i++)
+        {
+            if (children[i]->getLetters().count(std::string(1, c)) == 1)
+            {
                 subTraces[i] += c;
                 matched = true;
                 break;
             }
         }
-        if (!matched) {
+        if (!matched)
+        {
             unmatched++;
         }
     }
 
     int cost = 0;
-    for (size_t i = 0; i < children.size(); i++) {
+    for (size_t i = 0; i < children.size(); i++)
+    {
         cost += dynAlign(children[i], subTraces[i]);
     }
 
@@ -204,7 +209,89 @@ int dynAlignParallel(std::shared_ptr<TreeNode> node, const std::string &trace)
 
 int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::string &trace)
 {
-    return 1;
+    auto &children = node->getChildren();
+
+    if (children.size() != 2)
+    {
+        // TODO throw error
+        std::cout << "Loop node must have 2 children" << std::endl;
+        return -1;
+    }
+
+    std::vector<std::pair<int, int>> edges;
+    int n = trace.length();
+    for (int i = 0; i <= n; ++i)
+    {
+        for (int j = i; j <= n; ++j)
+        {
+            edges.emplace_back(i, j);
+        }
+    }
+
+    auto tempNode = std::make_shared<TreeNode>(SEQUENCE);
+    tempNode->addChild(children[0]);
+    tempNode->addChild(children[1]);
+
+    // TODO later change to unordered map, right now doesn't work because pair can't be used as a key
+    std::map<std::pair<int, int>, int> qrCosts;
+    for (const auto &pair : edges)
+    {
+        if (pair.first == pair.second)
+        {
+            qrCosts[pair] = 0;
+            continue;
+        }
+        std::string subTrace = trace.substr(pair.first, pair.second - pair.first);
+        int cost = dynAlign(tempNode, subTrace);
+        // perhaps use some upper bound like in the demo
+        qrCosts[pair] = cost;
+    }
+
+    for (size_t index = 0; index < n; index++)
+    {
+        bool change = false;
+        // TODO continue
+        for (const auto &edge : edges)
+        {
+            if (qrCosts[edge] == 0)
+            {
+                continue;
+            }
+            int optimalCost = qrCosts[edge];
+            for (size_t j = edge.first + 1; j <= edge.second; j++)
+            {
+                int newCost = qrCosts[{edge.first, j}] + qrCosts[{j, edge.second}];
+                if (newCost < optimalCost)
+                {
+                    optimalCost = newCost;
+                    change = true;
+                }
+            }
+            qrCosts[edge] = optimalCost;
+        }
+        if (!change)
+        {
+            break;
+        }
+    }
+
+    std::unordered_map<int, int> rCosts(n);
+    for (size_t i = 0; i <= n; i++)
+    {
+        rCosts[i] = dynAlign(children[0], trace.substr(0, i));
+    }
+
+    int minimalCosts = std::numeric_limits<int>::max();
+    for (size_t i = 0; i <= n; i++)
+    {
+        int costs = rCosts[i] + qrCosts[{i+1, n}];
+        if (costs < minimalCosts)
+        {
+            minimalCosts = costs;
+        }
+    }
+
+    return minimalCosts;
 }
 
 int dynAlign(std::shared_ptr<TreeNode> node, const std::string &trace)
@@ -213,7 +300,7 @@ int dynAlign(std::shared_ptr<TreeNode> node, const std::string &trace)
     {
         if (costTable[node->getId()].count(trace) == 1)
         {
-            std::cout << "Found trace: " << trace << " in node: " << node->getId() << std::endl;
+            // std::cout << "Found trace: " << trace << " in node: " << node->getId() << std::endl;
             return costTable[node->getId()][trace];
         }
     }
