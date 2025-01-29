@@ -5,9 +5,10 @@
 #include <map>
 
 std::string pruneInputTrace(std::shared_ptr<TreeNode> node, std::string &trace);
+void printVector(const std::vector<std::string> &vec);
 void printNestedVector(const std::vector<std::vector<int>> &vec);
 std::shared_ptr<TreeNode> constructTree(
-    const std::vector<std::pair<Operation, std::vector<std::shared_ptr<TreeNode>>>>& structure);
+    const std::vector<std::pair<Operation, std::vector<std::shared_ptr<TreeNode>>>> &structure);
 std::vector<std::string> segmentTrace(const std::string &trace, const std::vector<int> &segment);
 
 #endif // UTILS_H
