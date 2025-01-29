@@ -5,6 +5,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <filesystem>
 
 std::vector<std::string> parseXes(const std::string &filePath)
 {
@@ -64,7 +65,7 @@ Operation stringToOperation(const std::string &opStr)
         return SILENT_ACTIVITY;
     else
         throw std::runtime_error("Operation: " + opStr + " not implemented.");
-        // TODO perhaps add an unknown operation in the future
+    // TODO perhaps add an unknown operation in the future
 }
 
 std::shared_ptr<TreeNode> parsePTMLNode(rapidxml::xml_node<> *xmlNode)
@@ -81,7 +82,6 @@ std::shared_ptr<TreeNode> parsePTMLNode(rapidxml::xml_node<> *xmlNode)
 
     if (opAttr)
     {
-        // TODO doesn't work yet
         node = std::make_shared<TreeNode>(static_cast<Operation>(stringToOperation(opAttr->value())));
     }
     else if (actAttr)
@@ -114,9 +114,54 @@ std::shared_ptr<TreeNode> parsePtml(const std::string &filePath)
     rapidxml::xml_document<> doc;
     doc.parse<0>(xmlFile.data());
 
-    rapidxml::xml_node<> *rootNode = doc.first_node("processTree")->first_node("node");
+    rapidxml::xml_node<> *rootNode = doc.first_node("ptml")->first_node("processTree")->first_node("node");
+    // TODO check if null
     std::shared_ptr<TreeNode> processTree = parsePTMLNode(rootNode);
 
     processTree->printTree();
     return processTree;
+}
+
+// TODO use python parser to bring into the correct format
+std::vector<std::string> createPtmlXesPairs()
+{
+
+    std::string xesPath = "../data/xes/"; // Relative xesPath to directory
+    std::vector<std::string> fileNames;
+
+    try
+    {
+        for (const auto &entry : std::filesystem::directory_iterator(xesPath))
+        {
+            if (entry.is_regular_file())
+            { // Check if it's a file (not a directory)
+                fileNames.push_back(entry.path().stem().string());
+            }
+        }
+    }
+    catch (const std::filesystem::filesystem_error &e)
+    {
+        std::cerr << "Error: " << e.what() << '\n';
+        return fileNames; // Exit if directory is not found or inaccessible
+    }
+
+    printVector(fileNames);
+
+    std::string ptmlPath = "../data/ptml/"; 
+    std::vector<std::string> fileEndings = {"_pt00", "_pt10", "_pt25", "_pt50"};
+
+    for (const auto& fileName : fileNames) {
+        for (const auto& fileEnding : fileEndings) { 
+            const std::string filePtmlPath = ptmlPath + fileName + fileEnding + ".ptml";
+            const std::string fileXesPath = xesPath + fileName + ".xes";
+
+            auto processTree = parsePtml(filePtmlPath);
+            auto trace = parseXes(fileXesPath);
+            
+            processTree->printTree();
+            printVector(trace);
+        }
+    }
+
+    return fileNames;
 }
