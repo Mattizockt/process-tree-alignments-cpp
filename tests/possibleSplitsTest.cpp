@@ -110,9 +110,6 @@ TEST_CASE("dynAlign works correctly")
     auto root = constructTree({{PARALLEL, {std::make_shared<TreeNode>(ACTIVITY, "a"), std::make_shared<TreeNode>(ACTIVITY, "b"), std::make_shared<TreeNode>(ACTIVITY, "e")}},
                                {XOR, {std::make_shared<TreeNode>(ACTIVITY, "c"), std::make_shared<TreeNode>(ACTIVITY, "d")}}}); // <-- Only one closing brace needed
 
-    root->printTree();
-    std::cout << std::endl;
-
     root->fillLetterMaps();
 
     SECTION("Empty Trace")
@@ -146,8 +143,6 @@ TEST_CASE("dynAlign works correctly")
         auto loopRoot = constructTree({{REDO_LOOP, {sequenceNode, std::make_shared<TreeNode>(ACTIVITY, "f")}}});
 
         loopRoot->fillLetterMaps();
-        loopRoot->printTree();
-        std::cout << std::endl;
 
         SECTION("Trace: abfabfabfabfabfabfabfabf")
         {

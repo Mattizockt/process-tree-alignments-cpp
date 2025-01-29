@@ -1,7 +1,7 @@
 #include "treeNode.h"
-#include "utils.h" 
-#include <memory> 
-#include <string> 
+#include "utils.h"
+#include <memory>
+#include <string>
 #include <numeric>
 #include <limits>
 #include <vector>
@@ -113,13 +113,11 @@ int dynAlignActivity(std::shared_ptr<TreeNode> node, const std::string &trace)
     }
 }
 
-// TODO write tests
 int dynAlignSilentActivity(std::shared_ptr<TreeNode> node, const std::string &trace)
 {
     return trace.length();
 }
 
-// TODO write tests
 int dynAlignSequence(std::shared_ptr<TreeNode> node, const std::string &trace)
 {
     if (trace.length() == 0)
@@ -210,8 +208,7 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::string &trace)
 
     if (children.size() != 2)
     {
-        // TODO throw error
-        std::cout << "Loop node must have 2 children" << std::endl;
+        throw std::runtime_error("Loop node with id: " + std::to_string(node->getId()) + " does not have exactly two children.");
         return -1;
     }
 
@@ -230,6 +227,7 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::string &trace)
     tempNode->addChild(children[1]);
 
     // TODO later change to unordered map, right now doesn't work because pair can't be used as a key
+    // use hash function 
     std::map<std::pair<int, int>, int> qrCosts;
     for (const auto &pair : edges)
     {
@@ -240,14 +238,13 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::string &trace)
         }
         std::string subTrace = trace.substr(pair.first, pair.second - pair.first);
         int cost = dynAlign(tempNode, subTrace);
-        // perhaps use some upper bound like in the demo
+        // TODO perhaps use some upper bound like in the demo
         qrCosts[pair] = cost;
     }
 
     for (size_t index = 0; index < n; index++)
     {
         bool change = false;
-        // TODO continue
         for (const auto &edge : edges)
         {
             if (qrCosts[edge] == 0)
@@ -281,7 +278,7 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::string &trace)
     int minimalCosts = std::numeric_limits<int>::max();
     for (size_t i = 0; i <= n; i++)
     {
-        int costs = rCosts[i] + qrCosts[{i+1, n}];
+        int costs = rCosts[i] + qrCosts[{i + 1, n}];
         if (costs < minimalCosts)
         {
             minimalCosts = costs;
@@ -297,12 +294,10 @@ int dynAlign(std::shared_ptr<TreeNode> node, const std::string &trace)
     {
         if (costTable[node->getId()].count(trace) == 1)
         {
-            // std::cout << "Found trace: " << trace << " in node: " << node->getId() << std::endl;
             return costTable[node->getId()][trace];
         }
     }
 
-    // ad to cost table
     int costs;
     switch (node->getOperation())
     {
@@ -325,12 +320,9 @@ int dynAlign(std::shared_ptr<TreeNode> node, const std::string &trace)
         costs = dynAlignSilentActivity(node, trace);
         break;
     default:
-        // TODO: THROW EXCEPTION LATER
-        std::cout << "Unknown operation" << std::endl;
-        return -1;
+        throw std::runtime_error("Unknown node operation: " + std::to_string(node->getOperation()));
     }
 
     costTable[node->getId()][trace] = costs;
-    // std::cout << "Trace: " << trace << " not found in node: " << node->getId() << std::endl;
     return costs;
 }
