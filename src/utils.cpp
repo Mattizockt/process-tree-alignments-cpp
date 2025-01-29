@@ -62,7 +62,7 @@ void printNestedVector(const std::vector<std::vector<int>> &vec)
 }
 
 std::shared_ptr<TreeNode> constructTree(
-    std::vector<std::pair<Operation, std::vector<std::shared_ptr<TreeNode>>>> structure)
+    const std::vector<std::pair<Operation, std::vector<std::shared_ptr<TreeNode>>>>& structure)
 {
     auto root = std::make_shared<TreeNode>(SEQUENCE);
 
