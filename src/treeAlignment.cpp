@@ -1,105 +1,102 @@
-#include "treeProcessor.h"
-#include <iostream>
-#include <unordered_map>
-#include <memory>
-#include "utils.h"
-#include <iostream>
-#include <unordered_set>
+#include "treeNode.h"
+#include "utils.h" 
+#include <memory> 
+#include <string> 
 #include <numeric>
 #include <limits>
+#include <vector>
+#include <algorithm>
+#include <iostream>
 
-int TreeNode::numberOfNodes = 0;
-std::unordered_map<int, std::unordered_map<std::string, int>> costTable;
-
-TreeNode::TreeNode()
-    : letters(), children(), activity(), operation(), id(++numberOfNodes)
+// Helper function to compute possible splits
+void calculatePossibleSplits(
+    const std::vector<std::vector<int>> &childPositions,
+    std::vector<int> currentSegment,
+    int position,
+    std::vector<std::vector<int>> &possibleSplits,
+    const int lastIndex)
 {
-}
-
-TreeNode::TreeNode(Operation operation)
-    : letters(), children(), activity(), operation(operation), id(++numberOfNodes)
-{
-}
-
-TreeNode::TreeNode(Operation operation, std::string activity)
-    : letters(), children(), activity(activity), operation(operation), id(++numberOfNodes)
-{
-    if (operation == ACTIVITY)
+    // Full segment computed
+    if (position == childPositions.size())
     {
-        letters[activity] = true;
+        possibleSplits.push_back(currentSegment);
+        return;
     }
-}
-
-int TreeNode::getNumberOfNodes()
-{
-    return numberOfNodes;
-}
-
-int TreeNode::getId() const
-{
-    return id;
-}
-
-void TreeNode::setId(int newId)
-{
-    id = newId;
-}
-
-Operation TreeNode::getOperation() const
-{
-    return operation;
-}
-
-void TreeNode::setOperation(Operation newOperation)
-{
-    operation = newOperation;
-}
-
-std::string TreeNode::getActivity() const
-{
-    return activity;
-}
-
-void TreeNode::addChild(std::shared_ptr<TreeNode> child)
-{
-    children.push_back(child);
-}
-
-std::unordered_map<std::string, bool> &TreeNode::getLetters()
-{
-    return letters;
-}
-
-std::vector<std::shared_ptr<TreeNode>> &TreeNode::getChildren()
-{
-    return children;
-}
-
-void TreeNode::fillLetterMaps()
-{
-
-    if (this->getOperation() == ACTIVITY || this->getOperation() == SILENT_ACTIVITY)
+    // We already occupied all possible positions of the segment
+    else if (!currentSegment.empty() && currentSegment.back() == lastIndex)
     {
+        currentSegment.push_back(lastIndex);
+        calculatePossibleSplits(childPositions, currentSegment, position + 1, possibleSplits, lastIndex);
+        return;
+    }
+    // No positions for this child
+    else if (childPositions[position].empty())
+    {
+        currentSegment.push_back(currentSegment.empty() ? -1 : currentSegment.back());
+        calculatePossibleSplits(childPositions, currentSegment, position + 1, possibleSplits, lastIndex);
         return;
     }
 
-    for (auto &child : this->getChildren())
+    // There are positions for this child, and the segment is not full yet
+    if (!currentSegment.empty() && currentSegment.size() < childPositions.size() - 1 && currentSegment.back() != -1)
     {
-        child->fillLetterMaps();
-        for (const auto &[key, value] : child->getLetters())
+        currentSegment.push_back(currentSegment.back());
+        calculatePossibleSplits(childPositions, currentSegment, position + 1, possibleSplits, lastIndex);
+        currentSegment.pop_back();
+    }
+
+    for (const auto &element : childPositions[position])
+    {
+        if (!currentSegment.empty() && currentSegment.back() > element)
         {
-            this->getLetters()[key] = value;
+            continue;
         }
+
+        currentSegment.push_back(element);
+        calculatePossibleSplits(childPositions, currentSegment, position + 1, possibleSplits, lastIndex);
+        currentSegment.pop_back();
     }
 }
 
-void TreeNode::printTree(int level)
+std::vector<std::vector<int>> generateSplits(const std::shared_ptr<TreeNode> &node, const std::string &trace)
 {
-    std::cout << std::string(level * 2, ' ') << "Node ID: " << this->getId() << ", Operation: " << this->getOperation() << ", Activity (if exists): " << this->activity << std::endl;
-    for (auto &child : this->getChildren())
+    std::unordered_map<char, int> letterChildMap;
+    std::unordered_map<int, int> idToPosition;
+    std::vector<std::vector<int>> childPositions(node->getChildren().size());
+
+    int count = 0;
+    for (const auto &child : node->getChildren())
     {
-        child->printTree(level + 1);
+        childPositions[count].push_back(-1);
+        idToPosition[child->getId()] = count;
+
+        for (const auto &pair : child->getLetters())
+        {
+            letterChildMap[pair.first[0]] = child->getId();
+        }
+        ++count;
     }
+
+    for (size_t i = 0; i < trace.size(); ++i)
+    {
+        char letter = trace[i];
+        int childId = letterChildMap[letter];
+
+        if (i + 1 < trace.size() && letterChildMap[trace[i + 1]] == childId)
+        {
+            continue;
+        }
+
+        int position = idToPosition[childId];
+        childPositions[position].push_back(static_cast<int>(i));
+    }
+
+    childPositions[count - 1] = {static_cast<int>(trace.size() - 1)};
+
+    std::vector<std::vector<int>> splits;
+    calculatePossibleSplits(childPositions, {}, 0, splits, trace.size() - 1);
+
+    return splits;
 }
 
 int dynAlign(std::shared_ptr<TreeNode> node, const std::string &trace);

@@ -3,7 +3,7 @@ project(process-tree-alignments-cpp)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(process-tree-alignments-cpp src/main.cpp src/treeProcessor.cpp src/utils.cpp) 
+add_executable(process-tree-alignments-cpp src/main.cpp src/treeNode.cpp src/treeAlignment.cpp src/utils.cpp) 
 
 include(FetchContent)
 FetchContent_Declare(
@@ -13,7 +13,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(Catch2)
 
-add_executable(unit-tests tests/possibleSplitsTest.cpp src/treeProcessor.cpp src/utils.cpp)  # Include necessary files
+add_executable(unit-tests tests/possibleSplitsTest.cpp src/treeNode.cpp src/treeAlignment.cpp src/utils.cpp)  # Include necessary files
 target_link_libraries(unit-tests PRIVATE Catch2::Catch2WithMain)
 
 include(CTest)
