@@ -1,10 +1,9 @@
 #include <memory.h>
-#include "treeProcessor.h"
+#include "treeNode.h"
 #include "utils.h"
-
-// TODO run tests to see effect
 
 int main()
 {
+    // TODO
     return 0;
 }

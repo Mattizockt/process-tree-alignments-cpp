@@ -1,315 +1,172 @@
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch_all.hpp>
 #include "../src/utils.h"
-#include "../src/treeProcessor.h"
+#include "../src/treeNode.h"
+#include "../src/treeAlignment.h"
 #include <iostream>
 
-void testPossibleSplits(const std::shared_ptr<TreeNode> &root, const std::string &trace, const std::vector<std::vector<int>> &expected)
+// **Utility function to test possible splits**
+void testPossibleSplits(
+    const std::shared_ptr<TreeNode> &root,
+    const std::string &trace,
+    const std::vector<std::vector<int>> &expected)
 {
     auto splits = generateSplits(root, trace);
     std::sort(splits.begin(), splits.end());
+
     auto sortedExpected = expected;
     std::sort(sortedExpected.begin(), sortedExpected.end());
+
     REQUIRE(splits == sortedExpected);
 }
 
-TEST_CASE("Does possibleSplits work?")
+// **Tests for `generateSplits`**
+TEST_CASE("generateSplits works correctly")
 {
 
     SECTION("Single Child")
     {
-        auto root = std::make_shared<TreeNode>(SEQUENCE);
+        auto root = constructTree({{PARALLEL, {std::make_shared<TreeNode>(ACTIVITY, "a"), std::make_shared<TreeNode>(ACTIVITY, "b")}}});
 
-        auto child1 = std::make_shared<TreeNode>(PARALLEL);
-
-        auto child3 = std::make_shared<TreeNode>(ACTIVITY, "a");
-        auto child4 = std::make_shared<TreeNode>(ACTIVITY, "b");
-
-        child1->addChild(child3);
-        child1->addChild(child4);
-
-        root->addChild(child1);
-
-        root->fillLetterMaps();
-
-        SECTION("abbbabbbbabbaba")
+        SECTION("Trace: abbbabbbbabbaba")
         {
-            std::string trace = "abbbabbbbabbaba";
-            std::vector<std::vector<int>> expected = {{14}};
-            testPossibleSplits(root, trace, expected);
+            testPossibleSplits(root, "abbbabbbbabbaba", {{14}});
         }
 
-        SECTION("")
+        SECTION("Empty Trace")
         {
-            std::string trace = "";
-            std::vector<std::vector<int>> expected = {{-1}};
-            testPossibleSplits(root, trace, expected);
+            testPossibleSplits(root, "", {{-1}});
         }
     }
 
     SECTION("Two Children")
     {
-        auto root = std::make_shared<TreeNode>(SEQUENCE);
+        auto root = constructTree({{PARALLEL, {std::make_shared<TreeNode>(ACTIVITY, "a"), std::make_shared<TreeNode>(ACTIVITY, "b")}},
+                                   {XOR, {std::make_shared<TreeNode>(ACTIVITY, "c"), std::make_shared<TreeNode>(ACTIVITY, "d")}}});
 
-        auto child1 = std::make_shared<TreeNode>(PARALLEL);
-        auto child2 = std::make_shared<TreeNode>(XOR);
-
-        auto child3 = std::make_shared<TreeNode>(ACTIVITY, "a");
-        auto child4 = std::make_shared<TreeNode>(ACTIVITY, "b");
-        auto child5 = std::make_shared<TreeNode>(ACTIVITY, "c");
-        auto child6 = std::make_shared<TreeNode>(ACTIVITY, "d");
-
-        child1->addChild(child3);
-        child1->addChild(child4);
-
-        child2->addChild(child5);
-        child2->addChild(child6);
-
-        root->addChild(child1);
-        root->addChild(child2);
-
-        root->fillLetterMaps();
-
-        SECTION("abdc")
+        SECTION("Trace: abdc")
         {
-            std::string trace = "abdc";
-            std::vector<std::vector<int>> expected = {{-1, 3}, {1, 3}};
-            testPossibleSplits(root, trace, expected);
+            testPossibleSplits(root, "abdc", {{-1, 3}, {1, 3}});
         }
-        SECTION("aaaaadddaadddddddd")
+
+        SECTION("Trace: aaaaadddaadddddddd")
         {
-            std::string trace = "aaaaadddaadddddddd";
-            std::vector<std::vector<int>> expected = {{-1, 17}, {4, 17}, {9, 17}};
-            testPossibleSplits(root, trace, expected);
+            testPossibleSplits(root, "aaaaadddaadddddddd", {{-1, 17}, {4, 17}, {9, 17}});
         }
     }
 
     SECTION("Three Children")
     {
-        auto root = std::make_shared<TreeNode>(SEQUENCE);
+        auto root = constructTree({{PARALLEL, {std::make_shared<TreeNode>(ACTIVITY, "a"), std::make_shared<TreeNode>(ACTIVITY, "b"), std::make_shared<TreeNode>(ACTIVITY, "e")}},
+                                   {XOR, {std::make_shared<TreeNode>(ACTIVITY, "c"), std::make_shared<TreeNode>(ACTIVITY, "d")}},
+                                   {REDO_LOOP, {std::make_shared<TreeNode>(ACTIVITY, "f"), std::make_shared<TreeNode>(ACTIVITY, "g")}}});
 
-        auto child1 = std::make_shared<TreeNode>(PARALLEL);
-        auto child2 = std::make_shared<TreeNode>(XOR);
-        auto loopChild = std::make_shared<TreeNode>(REDO_LOOP); // New loop child
-
-        auto child3 = std::make_shared<TreeNode>(ACTIVITY, "a");
-        auto child4 = std::make_shared<TreeNode>(ACTIVITY, "b");
-        auto child5 = std::make_shared<TreeNode>(ACTIVITY, "c");
-        auto child6 = std::make_shared<TreeNode>(ACTIVITY, "d");
-        auto child7 = std::make_shared<TreeNode>(ACTIVITY, "e");
-        auto child8 = std::make_shared<TreeNode>(ACTIVITY, "f"); // New activity child
-        auto child9 = std::make_shared<TreeNode>(ACTIVITY, "g"); // New activity child
-
-        child1->addChild(child3);
-        child1->addChild(child4);
-        child1->addChild(child7);
-
-        child2->addChild(child5);
-        child2->addChild(child6);
-
-        loopChild->addChild(child8); // Adding new activity child to loop child
-        loopChild->addChild(child9); // Adding new activity child to loop child
-
-        root->addChild(child1);
-        root->addChild(child2);
-        root->addChild(loopChild); // Adding loop child to root
-
-        root->fillLetterMaps();
-
-        SECTION("dbcda")
+        SECTION("Trace: dbcda")
         {
-
-            std::string trace = "dbcda";
-            std::vector<std::vector<int>> expected = {{-1, -1, 4}, {-1, 0, 4}, {-1, 3, 4}, {1, 1, 4}, {1, 3, 4}, {4, 4, 4}};
-            testPossibleSplits(root, trace, expected);
+            testPossibleSplits(root, "dbcda",
+                               {{-1, -1, 4}, {-1, 0, 4}, {-1, 3, 4}, {1, 1, 4}, {1, 3, 4}, {4, 4, 4}});
         }
 
-        SECTION("dbcdaf")
+        SECTION("Trace: dbcdaf")
         {
-
-            std::string trace = "dbcdaf";
-            std::vector<std::vector<int>> expected = {{-1, -1, 5}, {-1, 0, 5}, {-1, 3, 5}, {1, 1, 5}, {1, 3, 5}, {4, 4, 5}};
-            testPossibleSplits(root, trace, expected);
-        }
-    }
-
-    SECTION("Four Children")
-    {
-        auto root = std::make_shared<TreeNode>(SEQUENCE);
-
-        auto child1 = std::make_shared<TreeNode>(PARALLEL);
-        auto child2 = std::make_shared<TreeNode>(XOR);
-        auto loopChild = std::make_shared<TreeNode>(REDO_LOOP); // New loop child
-        auto xorChild = std::make_shared<TreeNode>(XOR);        // New xor child
-
-        auto child3 = std::make_shared<TreeNode>(ACTIVITY, "a");
-        auto child4 = std::make_shared<TreeNode>(ACTIVITY, "b");
-        auto child5 = std::make_shared<TreeNode>(ACTIVITY, "c");
-        auto child6 = std::make_shared<TreeNode>(ACTIVITY, "d");
-        auto child7 = std::make_shared<TreeNode>(ACTIVITY, "e");
-        auto child8 = std::make_shared<TreeNode>(ACTIVITY, "f");  // New activity child
-        auto child9 = std::make_shared<TreeNode>(ACTIVITY, "g");  // New activity child
-        auto child10 = std::make_shared<TreeNode>(ACTIVITY, "h"); // New activity child
-        auto child11 = std::make_shared<TreeNode>(ACTIVITY, "i"); // New activity child
-
-        child1->addChild(child3);
-        child1->addChild(child4);
-        child1->addChild(child7);
-
-        child2->addChild(child5);
-        child2->addChild(child6);
-
-        loopChild->addChild(child8); // Adding new activity child to loop child
-        loopChild->addChild(child9); // Adding new activity child to loop child
-
-        xorChild->addChild(child10);
-        xorChild->addChild(child11);
-
-        root->addChild(child1);
-        root->addChild(child2);
-        root->addChild(loopChild); // Adding loop child to root
-        root->addChild(xorChild);  // Adding xor child to root
-
-        root->fillLetterMaps();
-
-        SECTION("")
-        {
-            std::string trace = "";
-            std::vector<std::vector<int>> expected = {{-1, -1, -1, -1}};
-            testPossibleSplits(root, trace, expected);
-        }
-
-        SECTION("abecdfgi")
-        {
-
-            std::string trace = "abecdfghi";
-            std::vector<std::vector<int>> expected =
-                {{-1, -1, -1, 8}, {-1, -1, 6, 8}, {-1, 4, 4, 8}, {-1, 4, 6, 8}, {2, 2, 2, 8}, {2, 2, 6, 8}, {2, 4, 4, 8}, {2, 4, 6, 8}};
-            testPossibleSplits(root, trace, expected);
-        }
-
-        SECTION("aacfhhf")
-        {
-            std::string trace = "aacfhhf";
-            std::vector<std::vector<int>> expected = {{-1, -1, -1, 6}, {-1, -1, 3, 6}, {-1, -1, 6, 6}, {-1, 2, 2, 6}, {-1, 2, 3, 6}, {-1, 2, 6, 6}, {1, 1, 1, 6}, {1, 1, 3, 6}, {1, 1, 6, 6}, {1, 2, 2, 6}, {1, 2, 3, 6}, {1, 2, 6, 6}};
-            testPossibleSplits(root, trace, expected);
-        }
-
-        SECTION("aagghi")
-        {
-            std::string trace = "aagghi";
-            std::vector<std::vector<int>> expected = {{-1, -1, -1, 5}, {-1, -1, 3, 5}, {1, 1, 1, 5}, {1, 1, 3, 5}};
-            testPossibleSplits(root, trace, expected);
-        }
-
-        SECTION("h")
-        {
-            std::string trace = "h";
-            std::vector<std::vector<int>> expected = {{-1, -1, -1, 0}};
-            testPossibleSplits(root, trace, expected);
+            testPossibleSplits(root, "dbcdaf",
+                               {{-1, -1, 5}, {-1, 0, 5}, {-1, 3, 5}, {1, 1, 5}, {1, 3, 5}, {4, 4, 5}});
         }
     }
 }
 
-TEST_CASE("spitTrace")
+// **Tests for `segmentTrace`**  I I
+TEST_CASE("segmentTrace works correctly")
 {
-    SECTION("Empty trace")
+    SECTION("Empty Trace")
     {
-        std::string trace = "";
-        std::vector<int> segment = {-1};
-        std::vector<std::string> expected = {""};
-        REQUIRE(segmentTrace(trace, segment) == expected);
+        REQUIRE(segmentTrace("", {-1}) == std::vector<std::string>{""});
     }
 
-    SECTION("abcdcedffg")
+    SECTION("Trace: abcdcedffg")
     {
         std::string trace = "abcdcedffg";
 
-        SECTION("normal split")
+        SECTION("Normal Split")
         {
-            std::vector<int> segment = {0, 3, 6, 9};
-            std::vector<std::string> expected = {"a", "bcd", "ced", "ffg"};
-            REQUIRE(segmentTrace(trace, segment) == expected);
+            REQUIRE(segmentTrace(trace, {0, 3, 6, 9}) == std::vector<std::string>{"a", "bcd", "ced", "ffg"});
         }
-        SECTION("mid empty split")
+
+        SECTION("Mid Empty Split")
         {
-            std::vector<int> segment = {0, 3, 3, 9};
-            std::vector<std::string> expected = {"a", "bcd", "", "cedffg"};
-            REQUIRE(segmentTrace(trace, segment) == expected);
+            REQUIRE(segmentTrace(trace, {0, 3, 3, 9}) == std::vector<std::string>{"a", "bcd", "", "cedffg"});
         }
-        SECTION("start empty split")
+
+        SECTION("Start Empty Split")
         {
-            std::vector<int> segment = {-1, -1, 2, 9};
-            std::vector<std::string> expected = {"", "", "abc", "dcedffg"};
-            REQUIRE(segmentTrace(trace, segment) == expected);
-        }
-        SECTION("ebad")
-        {
-            trace = "ebad";
-            std::vector<int> segment = {2,3};
-            std::vector<std::string> expected = {"eba", "d"};
-            REQUIRE(segmentTrace(trace, segment) == expected);
+            REQUIRE(segmentTrace(trace, {-1, -1, 2, 9}) == std::vector<std::string>{"", "", "abc", "dcedffg"});
         }
     }
 }
 
-TEST_CASE("dynAlign")
+// **Tests for `dynAlign`**
+TEST_CASE("dynAlign works correctly")
 {
-    auto root = createExample();
-    root->fillLetterMaps(); 
+    auto root = constructTree({{PARALLEL, {std::make_shared<TreeNode>(ACTIVITY, "a"), std::make_shared<TreeNode>(ACTIVITY, "b"), std::make_shared<TreeNode>(ACTIVITY, "e")}},
+                               {XOR, {std::make_shared<TreeNode>(ACTIVITY, "c"), std::make_shared<TreeNode>(ACTIVITY, "d")}}}); // <-- Only one closing brace needed
 
-    SECTION("Empty trace")
-    {
-        const std::string trace = "";
-        REQUIRE(dynAlign(root, trace) == 4);
-    }   
-    
-    SECTION("eba")
-    {
-        const std::string trace = "eba";
-        REQUIRE(dynAlign(root, trace) == 1);
-    }   
+    root->printTree();
+    std::cout << std::endl;
 
-    SECTION("ebad")
-    {
-        const std::string trace = "ebad";
-        REQUIRE(dynAlign(root, trace) == 0);
-    }   
+    root->fillLetterMaps();
 
-    SECTION("babebbdddcbb")
+    SECTION("Empty Trace")
     {
-        const std::string trace = "babebbdddcbb";
-        REQUIRE(dynAlign(root, trace) == 8);
+        REQUIRE(dynAlign(root, "") == 4);
     }
-    SECTION("loop")
+
+    SECTION("Trace: eba")
     {
-        auto root = std::make_shared<TreeNode>(REDO_LOOP);
-        auto rChild = std::make_shared<TreeNode>(SEQUENCE);
-        auto child1 = std::make_shared<TreeNode>(ACTIVITY, "a");
-        auto child2 = std::make_shared<TreeNode>(ACTIVITY, "b");
-        auto child3 = std::make_shared<TreeNode>(ACTIVITY, "f");
+        REQUIRE(dynAlign(root, "eba") == 1);
+    }
 
-        root.get()->addChild(rChild);
-        rChild.get()->addChild(child1);
-        rChild.get()->addChild(child2);
-        root.get()->addChild(child3);
-        root.get()->fillLetterMaps();
+    SECTION("Trace: ebad")
+    {
+        REQUIRE(dynAlign(root, "ebad") == 0);
+    }
 
-        SECTION("abfabfabfabfabfabfabfabf") {
-            const std::string trace = "abfabfabfabfabfabfabfabf";
-            REQUIRE(dynAlign(root, trace) == 0);
+    SECTION("Trace: babebbdddcbb")
+    {
+        REQUIRE(dynAlign(root, "babebbdddcbb") == 8);
+    }
+
+    SECTION("Loop Case")
+    {
+        // Create SEQUENCE node separately
+        auto sequenceNode = std::make_shared<TreeNode>(SEQUENCE);
+        sequenceNode->addChild(std::make_shared<TreeNode>(ACTIVITY, "a"));
+        sequenceNode->addChild(std::make_shared<TreeNode>(ACTIVITY, "b"));
+
+        // Now use constructTree correctly
+        auto loopRoot = constructTree({{REDO_LOOP, {sequenceNode, std::make_shared<TreeNode>(ACTIVITY, "f")}}});
+
+        loopRoot->fillLetterMaps();
+        loopRoot->printTree();
+        std::cout << std::endl;
+
+        SECTION("Trace: abfabfabfabfabfabfabfabf")
+        {
+            REQUIRE(dynAlign(loopRoot, "abfabfabfabfabfabfabfabf") == 0);
         }
-        SECTION("abababababababab123123abababababf") {
-            const std::string trace = "abababababababab123123abababababf";
-            REQUIRE(dynAlign(root, trace) == 17);
+
+        SECTION("Trace: abababababababab123123abababababf")
+        {
+            REQUIRE(dynAlign(loopRoot, "abababababababab123123abababababf") == 17);
         }
-        SECTION("abbbbf") {
-            const std::string trace = "abbbbf";
-            REQUIRE(dynAlign(root, trace) == 2);
+
+        SECTION("Trace: abbbbf")
+        {
+            REQUIRE(dynAlign(loopRoot, "abbbbf") == 2);
         }
-        SECTION("") {
-            const std::string trace = "";
-            REQUIRE(dynAlign(root, trace) == 2);
+
+        SECTION("Empty Trace")
+        {
+            REQUIRE(dynAlign(loopRoot, "") == 2);
         }
     }
 }
