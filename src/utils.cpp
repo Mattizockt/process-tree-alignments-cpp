@@ -48,6 +48,15 @@ std::vector<std::string> segmentTrace(const std::string &trace, const std::vecto
     return result;
 }
 
+void printVector(const std::vector<std::string> &vec)
+{
+    std::cout << "Vector contents:\n";
+    for (const std::string &str : vec)
+    {
+        std::cout << str << std::endl;
+    }
+}
+
 void printNestedVector(const std::vector<std::vector<int>> &vec)
 {
     for (size_t i = 0; i < vec.size(); ++i)
@@ -62,7 +71,7 @@ void printNestedVector(const std::vector<std::vector<int>> &vec)
 }
 
 std::shared_ptr<TreeNode> constructTree(
-    const std::vector<std::pair<Operation, std::vector<std::shared_ptr<TreeNode>>>>& structure)
+    const std::vector<std::pair<Operation, std::vector<std::shared_ptr<TreeNode>>>> &structure)
 {
     auto root = std::make_shared<TreeNode>(SEQUENCE);
 
