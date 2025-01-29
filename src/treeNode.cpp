@@ -5,20 +5,29 @@
 #include "utils.h"
 
 int TreeNode::numberOfNodes = 0;
-std::unordered_map<int, std::unordered_map<std::string, int>> costTable;
+std::unordered_map<std::string, std::unordered_map<std::string, int>> costTable;
 
 TreeNode::TreeNode()
-    : letters(), children(), activity(), operation(), id(++numberOfNodes)
+    : letters(), children(), activity(), operation(), id(std::to_string(++numberOfNodes))
 {
 }
 
 TreeNode::TreeNode(Operation operation)
-    : letters(), children(), activity(), operation(operation), id(++numberOfNodes)
+    : letters(), children(), activity(), operation(operation), id(std::to_string(++numberOfNodes))
 {
 }
 
 TreeNode::TreeNode(Operation operation, std::string activity)
-    : letters(), children(), activity(activity), operation(operation), id(++numberOfNodes)
+    : letters(), children(), activity(activity), operation(operation), id(std::to_string(++numberOfNodes))
+{
+    if (operation == ACTIVITY)
+    {
+        letters[activity] = true;
+    }
+}
+
+TreeNode::TreeNode(Operation operation, std::string activity, std::string id)
+    : letters(), children(), activity(activity), operation(operation), id(id)
 {
     if (operation == ACTIVITY)
     {
@@ -31,12 +40,12 @@ int TreeNode::getNumberOfNodes()
     return numberOfNodes;
 }
 
-int TreeNode::getId() const
+std::string TreeNode::getId() const
 {
     return id;
 }
 
-void TreeNode::setId(int newId)
+void TreeNode::setId(std::string newId)
 {
     id = newId;
 }
@@ -97,4 +106,3 @@ void TreeNode::printTree(int level)
         child->printTree(level + 1);
     }
 }
-

@@ -7,11 +7,11 @@
 int main()
 {
 
-    createPtmlXesPairs();
+    // createPtmlXesPairs();
 
     // const std::string xesPath = "../data/xes/exampleTraces.xes";
     // parseXes(xesPath);
 
-    // const std::string ptmlPath = "../data/ptml/exampleTree.ptml";
-    // parsePtml(ptmlPath);
+    const std::string ptmlPath = "../data/ptml/running-example-just-two-cases_pt00.ptml";
+    parsePtml(ptmlPath);
 }

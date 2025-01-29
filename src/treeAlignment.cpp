@@ -60,8 +60,8 @@ void calculatePossibleSplits(
 
 std::vector<std::vector<int>> generateSplits(const std::shared_ptr<TreeNode> &node, const std::string &trace)
 {
-    std::unordered_map<char, int> letterChildMap;
-    std::unordered_map<int, int> idToPosition;
+    std::unordered_map<char, std::string> letterChildMap;
+    std::unordered_map<std::string, int> idToPosition;
     std::vector<std::vector<int>> childPositions(node->getChildren().size());
 
     int count = 0;
@@ -80,7 +80,7 @@ std::vector<std::vector<int>> generateSplits(const std::shared_ptr<TreeNode> &no
     for (size_t i = 0; i < trace.size(); ++i)
     {
         char letter = trace[i];
-        int childId = letterChildMap[letter];
+        std::string childId = letterChildMap[letter];
 
         if (i + 1 < trace.size() && letterChildMap[trace[i + 1]] == childId)
         {
@@ -208,7 +208,7 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::string &trace)
 
     if (children.size() != 2)
     {
-        throw std::runtime_error("Loop node with id: " + std::to_string(node->getId()) + " does not have exactly two children.");
+        throw std::runtime_error("Loop node with id: " + node->getId() + " does not have exactly two children.");
         return -1;
     }
 

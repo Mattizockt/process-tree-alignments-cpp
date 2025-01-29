@@ -6,7 +6,7 @@
 #include <vector>
 #include <memory>
 
-extern std::unordered_map<int, std::unordered_map<std::string, int>> costTable;
+extern std::unordered_map<std::string, std::unordered_map<std::string, int>> costTable;
 
 enum Operation
 {
@@ -23,12 +23,14 @@ class TreeNode
 public:
     TreeNode();
     TreeNode(Operation operation);
-    TreeNode(Operation operation, std::string activity);
+    TreeNode(Operation operation, std::string id);
+    TreeNode(Operation operation, std::string activity, std::string id);
 
-    static int getNumberOfNodes();
+    static int
+    getNumberOfNodes();
 
-    int getId() const;
-    void setId(int newId);
+    std::string getId() const;
+    void setId(std::string newId);
 
     Operation getOperation() const;
     void setOperation(Operation newOperation);
@@ -47,7 +49,7 @@ public:
 
 private:
     static int numberOfNodes;
-    int id;
+    std::string id;
     Operation operation;
     std::string activity;
     std::unordered_map<std::string, bool> letters;
