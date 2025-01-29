@@ -5,11 +5,13 @@
 #include "parser.h"
 
 int main()
-{       
-    const std::string xesPath = "../data/xes/exampleTraces.xes";
-    parseXes(xesPath);
+{
 
-    const std::string ptmlPath = "../data/ptml/exampleTree.ptml";
-    parsePtml(ptmlPath);
-    
+    createPtmlXesPairs();
+
+    // const std::string xesPath = "../data/xes/exampleTraces.xes";
+    // parseXes(xesPath);
+
+    // const std::string ptmlPath = "../data/ptml/exampleTree.ptml";
+    // parsePtml(ptmlPath);
 }

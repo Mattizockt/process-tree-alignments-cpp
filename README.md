@@ -10,3 +10,6 @@ brew install boost
 
 Windows:
 vcpkg install boost
+
+
+Also add a data/ptml and data/xes folder and put your test data inside there.
