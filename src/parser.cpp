@@ -2,6 +2,7 @@
 #include "parser.h"
 #include "utils.h"
 #include "treeNode.h"
+#include "treeAlignment.h"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -50,23 +51,30 @@ std::vector<std::string> parseXes(const std::string &filePath)
     return traceSequences;
 }
 
-Operation stringToOperation(const std::string &opStr)
+std::shared_ptr<TreeNode> createNode(const std::string &nodeName, rapidxml::xml_node<> *sibling)
 {
-    if (opStr == "SEQUENCE")
-        return SEQUENCE;
-    else if (opStr == "PARALLEL")
-        return PARALLEL;
-    else if (opStr == "XOR")
-        return XOR;
-    else if (opStr == "REDO_LOOP")
-        return REDO_LOOP;
-    else if (opStr == "ACTIVITY")
-        return ACTIVITY;
-    else if (opStr == "SILENT_ACTIVITY")
-        return SILENT_ACTIVITY;
-    else
-        throw std::runtime_error("Operation: " + opStr + " not implemented.");
-    // TODO perhaps add an unknown operation in the future
+    if (!sibling || !sibling->first_attribute("id"))
+    {
+        throw std::runtime_error("Error: Missing 'id' attribute in node.");
+    }
+
+    std::string nodeId = sibling->first_attribute("id")->value();
+
+    static const std::unordered_map<std::string, Operation> nodeTypeMap = {
+        {"sequence", SEQUENCE},
+        {"and", PARALLEL},
+        {"xor", XOR},
+        {"xorLoop", REDO_LOOP},
+        {"manualTask", ACTIVITY},
+        {"automaticTask", SILENT_ACTIVITY}};
+
+    auto it = nodeTypeMap.find(nodeName);
+    if (it != nodeTypeMap.end())
+    {
+        return std::make_shared<TreeNode>(it->second, "", nodeId);
+    }
+
+    throw std::runtime_error("Error: Unsupported node type '" + nodeName + "'");
 }
 
 std::shared_ptr<TreeNode> parsePtml(const std::string &filePath)
@@ -75,51 +83,65 @@ std::shared_ptr<TreeNode> parsePtml(const std::string &filePath)
     rapidxml::xml_document<> doc;
     doc.parse<0>(xmlFile.data());
 
-    rapidxml::xml_node<> *node = doc.first_node("ptml")->first_node("processTree")->first_node();
-    // TODO check if null
+    rapidxml::xml_node<> *processTreeNode = doc.first_node("ptml")->first_node("processTree")->first_node();
+    if (!processTreeNode)
+    {
+        throw std::runtime_error("Error: <processTree> node not found.");
+    }
+
+    rapidxml::xml_node<> *node = processTreeNode->first_node();
+    if (!node)
+    {
+        throw std::runtime_error("Error: No child nodes found in <processTree>.");
+    }
 
     std::unordered_map<std::string, std::shared_ptr<TreeNode>> idToNode;
 
-    for (rapidxml::xml_node<> *sibling = node; sibling; sibling = sibling->next_sibling())
+    for (rapidxml::xml_node<> *sibling = processTreeNode; sibling; sibling = sibling->next_sibling())
     {
-        std::string nodeName = sibling->name();
+        std::string siblingName = sibling->name();
 
-        if (nodeName == "parentsNode")
+        if (siblingName == "parentsNode")
         {
             // check if element exists
-            std::string parentId = sibling->first_attribute("sourceId")->value();
-            std::string childId = sibling->first_attribute("targetId")->value();
+            rapidxml::xml_attribute<> *sourceAttr = sibling->first_attribute("sourceId");
+            rapidxml::xml_attribute<> *targetAttr = sibling->first_attribute("targetId");
+
+            if (!sourceAttr || !targetAttr)
+            {
+                throw std::runtime_error("Error: Missing 'sourceId' or 'targetId' in <parentsNode>.");
+            }
+
+            std::string parentId = sourceAttr->value();
+            std::string childId = targetAttr->value();
+
+            if (idToNode.find(parentId) == idToNode.end() || idToNode.find(childId) == idToNode.end())
+            {
+                throw std::runtime_error("Error: Invalid parent-child reference.");
+            }
+
             idToNode[parentId]->addChild(idToNode[childId]);
         }
         else
         {
-            std::shared_ptr<TreeNode> newNode;
-
-            if (nodeName == "sequence")
-                // operation activity id
-                newNode = std::make_shared<TreeNode>(SEQUENCE, "", sibling->first_attribute("id")->value());
-            else if (nodeName == "and")
-                newNode = std::make_shared<TreeNode>(PARALLEL, "", sibling->first_attribute("id")->value());
-            else if (nodeName == "xor")
-                newNode = std::make_shared<TreeNode>(XOR, "", sibling->first_attribute("id")->value());
-            else if (nodeName == "xorLoop")
-                newNode = std::make_shared<TreeNode>(REDO_LOOP, "", sibling->first_attribute("id")->value());
-            else if (nodeName == "manualTask")
-                newNode = std::make_shared<TreeNode>(ACTIVITY, "", sibling->first_attribute("id")->value());
-            else if (nodeName == "automaticTask")
-                newNode = std::make_shared<TreeNode>(SILENT_ACTIVITY, "", sibling->first_attribute("id")->value());
-            else
-            {
-                throw std::runtime_error("doesn't exist yet");
-            }
-
-            // TODO perhaps add an unknown operation in the future
-            std::cout << newNode->getId();
+            std::shared_ptr<TreeNode> newNode = createNode(siblingName, sibling);
             idToNode[newNode->getId()] = newNode;
         }
     }
 
-    auto root = idToNode[node->first_attribute("id")->value()];
+    rapidxml::xml_attribute<> *rootAttr = processTreeNode->first_attribute("root");
+    if (!rootAttr)
+    {
+        throw std::runtime_error("Error: Missing 'root' attribute in <processTree>.");
+    }
+
+    std::string rootId = rootAttr->value();
+    if (idToNode.find(rootId) == idToNode.end())
+    {
+        throw std::runtime_error("Error: Root node ID not found in parsed nodes.");
+    }
+
+    auto root = idToNode[rootId];
     root->printTree();
     return root;
 }
@@ -154,16 +176,19 @@ std::vector<std::string> createPtmlXesPairs()
 
     for (const auto &fileName : fileNames)
     {
+        const std::string fileXesPath = xesPath + fileName + ".xes";
+        auto trace = parseXes(fileXesPath);
+        printVector(trace);
+
         for (const auto &fileEnding : fileEndings)
         {
             const std::string filePtmlPath = ptmlPath + fileName + fileEnding + ".ptml";
-            const std::string fileXesPath = xesPath + fileName + ".xes";
 
             auto processTree = parsePtml(filePtmlPath);
-            auto trace = parseXes(fileXesPath);
-
             processTree->printTree();
-            printVector(trace);
+
+            // change to vector of strings
+            // dynAlign(processTree, trace);
         }
     }
 
