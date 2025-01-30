@@ -9,6 +9,44 @@
 #include <unordered_map>
 #include <filesystem>
 
+std::vector<std::vector<std::string>> parseXes(const std::string &filePath)
+{
+    rapidxml::file<> xmlFile(filePath.c_str());
+    rapidxml::xml_document<> doc;
+    doc.parse<0>(xmlFile.data());
+
+    std::vector<std::vector<std::string>> traceSequences;
+
+    for (rapidxml::xml_node<> *traceNode = doc.first_node("log")->first_node("trace");
+         traceNode;
+         traceNode = traceNode->next_sibling("trace"))
+    {
+        std::vector<std::string> sequence; // Vector to store activities for this trace
+
+        for (rapidxml::xml_node<> *eventNode = traceNode->first_node("event");
+             eventNode;
+             eventNode = eventNode->next_sibling("event"))
+        {
+            for (rapidxml::xml_node<> *stringNode = eventNode->first_node("string");
+                 stringNode;
+                 stringNode = stringNode->next_sibling("string"))
+            {
+                rapidxml::xml_attribute<> *keyAttr = stringNode->first_attribute("key");
+                rapidxml::xml_attribute<> *valueAttr = stringNode->first_attribute("value");
+
+                if (keyAttr && valueAttr && std::string(keyAttr->value()) == "concept:name")
+                {
+                    sequence.push_back(valueAttr->value()); // Store each activity separately
+                }
+            }
+        }
+
+        traceSequences.push_back(sequence); // Store the trace
+    }
+
+    return traceSequences;
+}
+
 std::shared_ptr<TreeNode> createNode(const std::string &nodeName, rapidxml::xml_node<> *sibling)
 {
     if (!sibling || !sibling->first_attribute("id"))
