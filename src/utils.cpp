@@ -5,43 +5,45 @@
 #include <unordered_map>
 #include <vector>
 
-// Prune the input trace based on node letters
-std::string pruneInputTrace(const std::shared_ptr<TreeNode> &node, const std::string &trace)
+// Prune the input trace based on node activities
+// TODO verify if correct
+std::shared_ptr<std::vector<std::string>> pruneInputTrace(const std::shared_ptr<TreeNode> &node, const std::shared_ptr<std::vector<std::string>> trace)
 {
-    std::unordered_set<char> nodeLetters;
-    for (const auto &pair : node->getLetters())
+    std::unordered_set<std::string> nodeLetters;
+    for (const auto &pair : node->getActivities())
     {
-        nodeLetters.insert(pair.first[0]);
+        nodeLetters.insert(pair.first);
     }
 
-    std::string prunedTrace;
-    prunedTrace.reserve(trace.size()); // Reserve memory to optimize performance
-    for (char c : trace)
+    std::shared_ptr<std::vector<std::string>> prunedTrace;
+    for (const auto &str : *trace)
     {
-        if (nodeLetters.count(c))
+        if (nodeLetters.count(str))
         {
-            prunedTrace.push_back(c);
+            prunedTrace->push_back(str);
         }
     }
 
     return prunedTrace;
 }
 
-std::vector<std::string> segmentTrace(const std::string &trace, const std::vector<int> &segments)
+std::vector<std::shared_ptr<std::vector<std::string>>> segmentTrace(const std::shared_ptr<std::vector<std::string>> trace, const std::vector<int> &segments)
 {
-    std::vector<std::string> result;
+    std::vector<std::shared_ptr<std::vector<std::string>>> result;
     result.reserve(segments.size()); // Reserve space for efficiency
 
     int start = 0;
+    const auto &defaultSubtrace = std::make_shared<std::vector<std::string>>();
     for (int index : segments)
     {
         if (index == -1 || start > index)
         {
-            result.emplace_back(""); // Empty segment
+            result.emplace_back(defaultSubtrace); // Empty segment
         }
         else
         {
-            result.emplace_back(trace.substr(start, index - start + 1));
+            // TODO test
+            result.emplace_back(std::make_shared<std::vector<std::string>>(trace->begin() + start, trace->begin() + index + 1));
             start = index + 1;
         }
     }
@@ -70,6 +72,24 @@ void printNestedVector(const std::vector<std::vector<int>> &vec)
     }
 }
 
+// Function to print a nested vector of strings
+void printNestedVector(const std::vector<std::shared_ptr<std::vector<std::string>>> &nestedVec) {
+    std::cout << "[\n";
+    for (const auto vecPtr : nestedVec) {
+        if (!vecPtr) {
+            std::cout << "  null\n";
+            continue;
+        }
+        
+        std::cout << "  [ ";
+        for (const auto &str : *vecPtr) {
+            std::cout << "\"" << str << "\" ";
+        }
+        std::cout << "]\n";
+    }
+    std::cout << "]\n";
+}
+
 std::shared_ptr<TreeNode> constructTree(
     const std::vector<std::pair<Operation, std::vector<std::shared_ptr<TreeNode>>>> &structure)
 {
@@ -91,6 +111,6 @@ std::shared_ptr<TreeNode> constructTree(
         root->addChild(node);
     }
 
-    root->fillLetterMaps();
+    root->fillActivityMaps();
     return root;
 }
