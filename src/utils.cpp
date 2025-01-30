@@ -27,29 +27,6 @@ std::shared_ptr<std::vector<std::string>> pruneInputTrace(const std::shared_ptr<
     return prunedTrace;
 }
 
-std::vector<std::shared_ptr<std::vector<std::string>>> segmentTrace(const std::shared_ptr<std::vector<std::string>> trace, const std::vector<int> &segments)
-{
-    std::vector<std::shared_ptr<std::vector<std::string>>> result;
-    result.reserve(segments.size()); // Reserve space for efficiency
-
-    int start = 0;
-    const auto &defaultSubtrace = std::make_shared<std::vector<std::string>>();
-    for (int index : segments)
-    {
-        if (index == -1 || start > index)
-        {
-            result.emplace_back(defaultSubtrace); // Empty segment
-        }
-        else
-        {
-            // TODO test
-            result.emplace_back(std::make_shared<std::vector<std::string>>(trace->begin() + start, trace->begin() + index + 1));
-            start = index + 1;
-        }
-    }
-    return result;
-}
-
 void printVector(const std::vector<std::string> &vec)
 {
     std::cout << "Vector contents:\n";
