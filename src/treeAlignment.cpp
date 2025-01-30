@@ -8,67 +8,108 @@
 #include <algorithm>
 #include <iostream>
 
-// Helper function to compute possible splits
+// custom hash function to hash pairs in an unordered map
+template <class A, class B>
+struct std::hash<std::pair<A, B>>
+{
+    size_t operator()(const pair<A, B> &p) const
+    {
+        return std::rotl(hash<A>{}(p.first), 1) ^
+               hash<B>{}(p.second);
+    }
+};
+
+// example: trace [a,c,c,d,g], splits [-1,2,4] yield [[],[a,c,c],[d,g]]
+// put in tree alignment
+std::vector<std::shared_ptr<std::vector<std::string>>> segmentTrace(const std::shared_ptr<std::vector<std::string>> trace, const std::vector<int> &splits)
+{
+    std::vector<std::shared_ptr<std::vector<std::string>>> traceSegments;
+    traceSegments.reserve(splits.size());
+
+    int start = 0;
+    const auto &defaultSubtrace = std::make_shared<std::vector<std::string>>(); // Empty segment
+    for (int index : splits)
+    {
+        if (index == -1 || start > index)
+        {
+            traceSegments.emplace_back(defaultSubtrace);
+        }
+        else
+        {
+            // TODO test
+            traceSegments.emplace_back(std::make_shared<std::vector<std::string>>(trace->begin() + start, trace->begin() + index + 1));
+            start = index + 1;
+        }
+    }
+    return traceSegments;
+}
+
+// helper function to compute possible splits
 void calculatePossibleSplits(
+    // perhaps change name childPositions
     const std::vector<std::vector<int>> &childPositions,
-    std::vector<int> currentSegment,
+    std::vector<int> currentSplit,
     int position,
     std::vector<std::vector<int>> &possibleSplits,
-    const int lastIndex)
+    const int lastPosition)
 {
     // Full segment computed
     if (position == childPositions.size())
     {
-        possibleSplits.push_back(currentSegment);
+        possibleSplits.push_back(currentSplit);
         return;
     }
-    // We already occupied all possible positions of the segment
-    else if (!currentSegment.empty() && currentSegment.back() == lastIndex)
+    // Previous elements of segment are already the last position e.g. [4,4,..] for lastPosition == 4
+    else if (!currentSplit.empty() && currentSplit.back() == lastPosition)
     {
-        currentSegment.push_back(lastIndex);
-        calculatePossibleSplits(childPositions, currentSegment, position + 1, possibleSplits, lastIndex);
+        currentSplit.push_back(lastPosition);
+        calculatePossibleSplits(childPositions, currentSplit, position + 1, possibleSplits, lastPosition);
         return;
     }
-    // No positions for this child
+    // child has no activites that are in this trace
+    // TODO add test case
     else if (childPositions[position].empty())
     {
-        currentSegment.push_back(currentSegment.empty() ? -1 : currentSegment.back());
-        calculatePossibleSplits(childPositions, currentSegment, position + 1, possibleSplits, lastIndex);
+        currentSplit.push_back(currentSplit.empty() ? -1 : currentSplit.back());
+        calculatePossibleSplits(childPositions, currentSplit, position + 1, possibleSplits, lastPosition);
         return;
     }
-
     // There are positions for this child, and the segment is not full yet
-    if (!currentSegment.empty() && currentSegment.size() < childPositions.size() - 1 && currentSegment.back() != -1)
+    if (!currentSplit.empty() && currentSplit.size() < childPositions.size() - 1 && currentSplit.back() != -1)
     {
-        currentSegment.push_back(currentSegment.back());
-        calculatePossibleSplits(childPositions, currentSegment, position + 1, possibleSplits, lastIndex);
-        currentSegment.pop_back();
+        currentSplit.push_back(currentSplit.back());
+        calculatePossibleSplits(childPositions, currentSplit, position + 1, possibleSplits, lastPosition);
+        currentSplit.pop_back();
     }
 
     for (const auto &element : childPositions[position])
     {
-        if (!currentSegment.empty() && currentSegment.back() > element)
+        // only look at childPositions that are bigger than the current one. we want [1,5,6] not this [1,5,3]
+        if (!currentSplit.empty() && currentSplit.back() > element)
         {
             continue;
         }
 
-        currentSegment.push_back(element);
-        calculatePossibleSplits(childPositions, currentSegment, position + 1, possibleSplits, lastIndex);
-        currentSegment.pop_back();
+        currentSplit.push_back(element);
+        calculatePossibleSplits(childPositions, currentSplit, position + 1, possibleSplits, lastPosition);
+        currentSplit.pop_back();
     }
 }
 
+// suggest where splitting the trace would make sense for children, returns splitting point
+// [a,b,v,d,y,u] that is supposed to be split among two children
+// it returns something like this  [0,5] = [[a], [b,v,d,y,u]] or [-1,5] = [[a, b,v,d,y,u]]
 std::vector<std::vector<int>> generateSplits(const std::shared_ptr<TreeNode> &node, const std::shared_ptr<std::vector<std::string>> trace)
 {
     std::unordered_map<std::string, std::string> activityChildMap;
-    std::unordered_map<std::string, int> idToPosition;
+    std::unordered_map<std::string, int> nodeIdPostionMap;
     std::vector<std::vector<int>> childPositions(node->getChildren().size());
 
     int count = 0;
     for (const auto &child : node->getChildren())
     {
         childPositions[count].push_back(-1);
-        idToPosition[child->getId()] = count;
+        nodeIdPostionMap[child->getId()] = count;
 
         for (const auto &pair : child->getActivities())
         {
@@ -82,15 +123,17 @@ std::vector<std::vector<int>> generateSplits(const std::shared_ptr<TreeNode> &no
         std::string activity = trace->at(i);
         std::string childId = activityChildMap[activity];
 
+        // next activity is the same as current activity
         if (i + 1 < trace->size() && activityChildMap[trace->at(i + 1)] == childId)
         {
             continue;
         }
 
-        int position = idToPosition[childId];
+        int position = nodeIdPostionMap[childId];
         childPositions[position].push_back(static_cast<int>(i));
     }
 
+    // we mustn't create a split that doesn't take the whole trace into account
     childPositions[count - 1] = {static_cast<int>(trace->size() - 1)};
 
     std::vector<std::vector<int>> splits;
@@ -131,24 +174,20 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::
 
     int minCosts = std::numeric_limits<int>::max();
 
-    std::vector<std::vector<int>> segments = generateSplits(node, trace);
+    std::vector<std::vector<int>> splits = generateSplits(node, trace);
 
-    for (const auto &split : segments)
+    for (const auto &split : splits)
     {
         int costs = 0;
-        const auto &splittedTraces = segmentTrace(trace, split);
+        const auto &splittedSegments = segmentTrace(trace, split);
         const auto &children = node->getChildren();
 
-        for (int i = 0; i < splittedTraces.size(); i++)
+        for (int i = 0; i < splittedSegments.size(); i++)
         {
-            // TODO accumluate
-            costs += dynAlign(children[i], splittedTraces[i]);
-            std::cout << "";
+            costs += dynAlign(children[i], splittedSegments[i]);
         }
-        if (costs < minCosts)
-        {
-            minCosts = costs;
-        }
+
+        minCosts = std::min(minCosts, costs);
     }
 
     return minCosts;
@@ -173,41 +212,26 @@ int dynAlignParallel(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::
 {
     const auto &children = node->getChildren();
     std::vector<std::shared_ptr<std::vector<std::string>>> subTraces(children.size());
-    for (auto &ptr : subTraces)
-    {
-        ptr = std::make_shared<std::vector<std::string>>();
-    }
+    std::generate(subTraces.begin(), subTraces.end(), []
+                  { return std::make_shared<std::vector<std::string>>(); });
 
-    int unmatched = 0;
-
-    // if trace empty, no subtraces
-    for (const auto &activity : (*trace))
-    {
-        bool matched = false;
-        for (size_t i = 0; i < children.size(); i++)
-        {
-            if (children[i]->getActivities().count(activity) == 1)
-            {
+    int unmatched = std::count_if(trace->begin(), trace->end(), [&](const std::string &activity)
+                                  {
+        for (size_t i = 0; i < children.size(); i++) {
+            if (children[i]->getActivities().count(activity)) {
                 subTraces[i]->push_back(activity);
-                matched = true;
-                break;
+                return false;
             }
         }
-        if (!matched)
-        {
-            unmatched++;
-        }
-    }
+        return true; });
 
-    int cost = 0;
-    for (size_t i = 0; i < children.size(); i++)
-    {
-        cost += dynAlign(children[i], subTraces[i]);
-    }
+    int cost = std::accumulate(children.begin(), children.end(), 0,
+                               [&, i = 0](int sum, const auto &child) mutable
+                               {
+                                   return sum + dynAlign(child, subTraces[i++]);
+                               });
 
-    cost += unmatched;
-
-    return cost;
+    return cost + unmatched;
 }
 
 int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vector<std::string>> trace)
@@ -219,6 +243,8 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vect
         throw std::runtime_error("Loop node with id: " + node->getId() + " does not have exactly two children.");
     }
 
+    // TODO refactor treeAlignment.cpp, refactor test.cpp, move segmenttrace into tree alignment
+    // maybe use unique pointer
     std::vector<std::pair<int, int>> edges;
     int n = trace->size();
     for (int i = 0; i <= n; ++i)
@@ -229,25 +255,24 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vect
         }
     }
 
+    // so that we can use dynAlign to calculate cost
     auto tempNode = std::make_shared<TreeNode>(SEQUENCE);
     tempNode->addChild(children[0]);
     tempNode->addChild(children[1]);
 
-    // TODO later change to unordered map, right now doesn't work because pair can't be used as a key
-    // use hash function
-    std::map<std::pair<int, int>, int> qrCosts;
-    for (const auto &pair : edges)
+    // or use a pointer
+    std::unordered_map<std::pair<int, int>, int, PairHash> qrCosts;
+    for (const auto &edge : edges)
     {
-        if (pair.first == pair.second)
+        if (edge.first == edge.second)
         {
-            qrCosts[pair] = 0;
+            qrCosts[edge] = 0;
             continue;
         }
-        // use arrays later to make this operation more efficient
-        auto subTrace = std::make_shared<std::vector<std::string>>(trace->begin() + pair.first, trace->begin() + pair.second);
+        // TODO use arrays later to make this operation more efficient
+        auto subTrace = std::make_shared<std::vector<std::string>>(trace->begin() + edge.first, trace->begin() + edge.second);
         int cost = dynAlign(tempNode, subTrace);
-        // TODO perhaps use some upper bound like in the demo
-        qrCosts[pair] = cost;
+        qrCosts[edge] = cost;
     }
 
     for (size_t index = 0; index < n; index++)
@@ -259,6 +284,7 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vect
             {
                 continue;
             }
+            
             int optimalCost = qrCosts[edge];
             for (size_t j = edge.first + 1; j <= edge.second; j++)
             {
@@ -280,7 +306,6 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vect
     std::unordered_map<int, int> rCosts(n);
     for (size_t i = 0; i <= n; i++)
     {
-
         rCosts[i] = dynAlign(children[0], std::make_shared<std::vector<std::string>>(trace->begin(), trace->begin() + i));
     }
 

@@ -15,7 +15,6 @@ std::shared_ptr<std::vector<std::string>> convertToTraceFormat(const std::string
     return vec;
 }
 
-// **Utility function to test possible splits**
 void testPossibleSplits(
     const std::shared_ptr<TreeNode> &root,
     const std::shared_ptr<std::vector<std::string>> trace,
@@ -30,7 +29,31 @@ void testPossibleSplits(
     REQUIRE(splits == sortedExpected);
 }
 
-// **Tests for `generateSplits`**
+bool compareNestedVectors(
+    const std::vector<std::shared_ptr<std::vector<std::string>>> &vec1,
+    const std::vector<std::shared_ptr<std::vector<std::string>>> &vec2)
+{
+    if (vec1.size() != vec2.size())
+    {
+        return false; 
+    }
+
+    for (size_t i = 0; i < vec1.size(); ++i)
+    {
+        if (!vec1[i] || !vec2[i])
+        {
+            return false; 
+        }
+
+        if (*vec1[i] != *vec2[i])
+        {
+            return false; 
+        }
+    }
+
+    return true;
+}
+
 TEST_CASE("generateSplits works correctly")
 {
 
@@ -85,66 +108,41 @@ TEST_CASE("generateSplits works correctly")
     }
 }
 
-bool compareNestedVectors(
-    const std::vector<std::shared_ptr<std::vector<std::string>>> &vec1,
-    const std::vector<std::shared_ptr<std::vector<std::string>>> &vec2)
-{
-    if (vec1.size() != vec2.size())
-    {
-        return false; // Different sizes, so they are not equal
-    }
-
-    for (size_t i = 0; i < vec1.size(); ++i)
-    {
-        if (!vec1[i] || !vec2[i])
-        {
-            return false; // If any pointer is null, comparison fails
-        }
-
-        if (*vec1[i] != *vec2[i])
-        {
-            return false; // Compare the actual vectors
-        }
-    }
-
-    return true;
-}
-
-// **Tests for `segmentTrace`**  I I
 TEST_CASE("segmentTrace works correctly")
 {
+    using stringVec = std::vector<std::string>;
     SECTION("Empty Trace")
     {
-        auto segmentedTrace = segmentTrace(convertToTraceFormat(""), {-1}); // Store without reference
+        auto segmentedTrace = segmentTrace(convertToTraceFormat(""), {-1});
 
-        std::vector<std::shared_ptr<std::vector<std::string>>> expected;
-        expected.push_back(std::make_shared<std::vector<std::string>>(std::vector<std::string>()));
+        std::vector<std::shared_ptr<stringVec>> expected;
+        expected.push_back(std::make_shared<stringVec>(stringVec()));
 
-        REQUIRE(compareNestedVectors(segmentedTrace, expected)); // Pass actual segmentedTrace
+        REQUIRE(compareNestedVectors(segmentedTrace, expected));
     }
 
     SECTION("Trace: abcdcedffg")
     {
-        auto segmentedTrace = segmentTrace(convertToTraceFormat("abcdcedffg"), {0, 3, 6, 9}); // Store without reference
+        auto segmentedTrace = segmentTrace(convertToTraceFormat("abcdcedffg"), {0, 3, 6, 9});
 
-        std::vector<std::shared_ptr<std::vector<std::string>>> expected;
-        expected.push_back(std::make_shared<std::vector<std::string>>(std::vector<std::string>{"a"}));
-        expected.push_back(std::make_shared<std::vector<std::string>>(std::vector<std::string>{"b", "c", "d"}));
-        expected.push_back(std::make_shared<std::vector<std::string>>(std::vector<std::string>{"c", "e", "d"}));
-        expected.push_back(std::make_shared<std::vector<std::string>>(std::vector<std::string>{"f", "f", "g"}));
+        std::vector<std::shared_ptr<stringVec>> expected = {
+            std::make_shared<stringVec>(stringVec{"a"}),
+            std::make_shared<stringVec>(stringVec{"b", "c", "d"}),
+            std::make_shared<stringVec>(stringVec{"c", "e", "d"}),
+            std::make_shared<stringVec>(stringVec{"f", "f", "g"})};
 
-        std::cout << std::endl;
-        REQUIRE(compareNestedVectors(segmentedTrace, expected)); // Pass actual segmentedTrace
+        REQUIRE(compareNestedVectors(segmentedTrace, expected));
 
         SECTION("Mid Empty Split")
         {
             auto segmentedTrace = segmentTrace(convertToTraceFormat("abcdcedffg"), {0, 3, 3, 9});
 
-            std::vector<std::shared_ptr<std::vector<std::string>>> expected;
-            expected.push_back(std::make_shared<std::vector<std::string>>(std::vector<std::string>{"a"}));
-            expected.push_back(std::make_shared<std::vector<std::string>>(std::vector<std::string>{"b", "c", "d"}));
-            expected.push_back(std::make_shared<std::vector<std::string>>(std::vector<std::string>()));
-            expected.push_back(std::make_shared<std::vector<std::string>>(std::vector<std::string>{"c", "e", "d", "f", "f", "g"}));
+            std::vector<std::shared_ptr<stringVec>> expected = {
+            std::make_shared<stringVec>(stringVec{"a"}),
+            std::make_shared<stringVec>(stringVec{"b", "c", "d"}),
+            std::make_shared<stringVec>(stringVec()),
+            std::make_shared<stringVec>(stringVec{"c", "e", "d", "f", "f", "g"})
+            };
 
             std::cout << std::endl;
 
@@ -155,22 +153,22 @@ TEST_CASE("segmentTrace works correctly")
         {
             auto segmentedTrace = segmentTrace(convertToTraceFormat("abcdcedffg"), {-1, -1, 2, 9});
 
-            std::vector<std::shared_ptr<std::vector<std::string>>> expected;
-            expected.push_back(std::make_shared<std::vector<std::string>>(std::vector<std::string>()));
-            expected.push_back(std::make_shared<std::vector<std::string>>(std::vector<std::string>()));
-            expected.push_back(std::make_shared<std::vector<std::string>>(std::vector<std::string>{"a", "b", "c"}));
-            expected.push_back(std::make_shared<std::vector<std::string>>(std::vector<std::string>{"d", "c", "e", "d", "f", "f", "g"}));
+            std::vector<std::shared_ptr<stringVec>> expected = {
+            std::make_shared<stringVec>(stringVec()),
+            std::make_shared<stringVec>(stringVec()),
+            std::make_shared<stringVec>(stringVec{"a", "b", "c"}),
+            std::make_shared<stringVec>(stringVec{"d", "c", "e", "d", "f", "f", "g"})
+            };
 
             REQUIRE(compareNestedVectors(segmentedTrace, expected));
         }
+        }
     }
-}
 
-// **Tests for `dynAlign`**
 TEST_CASE("dynAlign works correctly")
 {
     auto root = constructTree({{PARALLEL, {std::make_shared<TreeNode>(ACTIVITY, "a"), std::make_shared<TreeNode>(ACTIVITY, "b"), std::make_shared<TreeNode>(ACTIVITY, "e")}},
-                               {XOR, {std::make_shared<TreeNode>(ACTIVITY, "c"), std::make_shared<TreeNode>(ACTIVITY, "d")}}}); // <-- Only one closing brace needed
+                               {XOR, {std::make_shared<TreeNode>(ACTIVITY, "c"), std::make_shared<TreeNode>(ACTIVITY, "d")}}});
 
     root->fillActivityMaps();
 
@@ -196,12 +194,10 @@ TEST_CASE("dynAlign works correctly")
 
     SECTION("Loop Case")
     {
-        // Create SEQUENCE node separately
         auto sequenceNode = std::make_shared<TreeNode>(SEQUENCE);
         sequenceNode->addChild(std::make_shared<TreeNode>(ACTIVITY, "a"));
         sequenceNode->addChild(std::make_shared<TreeNode>(ACTIVITY, "b"));
 
-        // Now use constructTree correctly
         auto loopRoot = constructTree({{REDO_LOOP, {sequenceNode, std::make_shared<TreeNode>(ACTIVITY, "f")}}});
 
         loopRoot->fillActivityMaps();
