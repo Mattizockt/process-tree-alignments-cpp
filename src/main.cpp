@@ -6,7 +6,6 @@
 
 int main()
 {
-
     createPtmlXesPairs();
 
     // const std::string xesPath = "../data/xes/running-example-just-two-cases.xes";

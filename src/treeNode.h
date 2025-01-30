@@ -6,7 +6,9 @@
 #include <vector>
 #include <memory>
 
-extern std::unordered_map<std::string, std::unordered_map<std::string, int>> costTable;
+// node id -> (trace -> alignmentcost)
+// later change it to an array for more efficiency
+extern std::unordered_map<std::string, std::unordered_map<std::shared_ptr<std::vector<std::string>>, int>> costTable;
 
 enum Operation
 {
@@ -37,13 +39,13 @@ public:
 
     std::string getActivity() const;
 
-    std::unordered_map<std::string, bool> &getLetters();
+    std::unordered_map<std::string, bool> &getActivities();
 
     void addChild(std::shared_ptr<TreeNode> child);
 
     std::vector<std::shared_ptr<TreeNode>> &getChildren();
 
-    void fillLetterMaps();
+    void fillActivityMaps();
 
     void printTree(int level = 0);
 
@@ -52,7 +54,7 @@ private:
     std::string id;
     Operation operation;
     std::string activity;
-    std::unordered_map<std::string, bool> letters;
+    std::unordered_map<std::string, bool> activities;
     std::vector<std::shared_ptr<TreeNode>> children;
 };
 

@@ -9,48 +9,6 @@
 #include <unordered_map>
 #include <filesystem>
 
-std::vector<std::string> parseXes(const std::string &filePath)
-{
-    rapidxml::file<> xmlFile(filePath.c_str());
-    rapidxml::xml_document<> doc;
-    doc.parse<0>(xmlFile.data());
-
-    std::vector<std::string> traceSequences;
-
-    for (rapidxml::xml_node<> *traceNode = doc.first_node("log")->first_node("trace");
-         traceNode;
-         traceNode = traceNode->next_sibling("trace"))
-    {
-
-        std::string sequence;
-
-        for (rapidxml::xml_node<> *eventNode = traceNode->first_node("event");
-             eventNode;
-             eventNode = eventNode->next_sibling("event"))
-        {
-
-            for (rapidxml::xml_node<> *stringNode = eventNode->first_node("string");
-                 stringNode;
-                 stringNode = stringNode->next_sibling("string"))
-            {
-
-                rapidxml::xml_attribute<> *keyAttr = stringNode->first_attribute("key");
-                rapidxml::xml_attribute<> *valueAttr = stringNode->first_attribute("value");
-
-                if (keyAttr && valueAttr && std::string(keyAttr->value()) == "concept:name")
-                {
-                    sequence += valueAttr->value();
-                }
-            }
-        }
-
-        traceSequences.push_back(sequence);
-    }
-
-    printVector(traceSequences);
-    return traceSequences;
-}
-
 std::shared_ptr<TreeNode> createNode(const std::string &nodeName, rapidxml::xml_node<> *sibling)
 {
     if (!sibling || !sibling->first_attribute("id"))
@@ -83,7 +41,9 @@ std::shared_ptr<TreeNode> parsePtml(const std::string &filePath)
     rapidxml::xml_document<> doc;
     doc.parse<0>(xmlFile.data());
 
-    rapidxml::xml_node<> *processTreeNode = doc.first_node("ptml")->first_node("processTree")->first_node();
+    std::cout << "File size: " << xmlFile.size() << " bytes" << std::endl;
+
+    rapidxml::xml_node<> *processTreeNode = doc.first_node("ptml")->first_node("processTree");
     if (!processTreeNode)
     {
         throw std::runtime_error("Error: <processTree> node not found.");
@@ -96,8 +56,7 @@ std::shared_ptr<TreeNode> parsePtml(const std::string &filePath)
     }
 
     std::unordered_map<std::string, std::shared_ptr<TreeNode>> idToNode;
-
-    for (rapidxml::xml_node<> *sibling = processTreeNode; sibling; sibling = sibling->next_sibling())
+    for (rapidxml::xml_node<> *sibling = node; sibling; sibling = sibling->next_sibling())
     {
         std::string siblingName = sibling->name();
 
@@ -143,6 +102,7 @@ std::shared_ptr<TreeNode> parsePtml(const std::string &filePath)
 
     auto root = idToNode[rootId];
     root->printTree();
+    std::cout << std::endl;
     return root;
 }
 
@@ -178,17 +138,20 @@ std::vector<std::string> createPtmlXesPairs()
     {
         const std::string fileXesPath = xesPath + fileName + ".xes";
         auto trace = parseXes(fileXesPath);
-        printVector(trace);
 
         for (const auto &fileEnding : fileEndings)
         {
             const std::string filePtmlPath = ptmlPath + fileName + fileEnding + ".ptml";
+            std::cout << filePtmlPath << std::endl;
 
             auto processTree = parsePtml(filePtmlPath);
-            processTree->printTree();
 
             // change to vector of strings
-            // dynAlign(processTree, trace);
+
+            for (const auto &otherTrace : trace) {
+                // TODO improve later
+                // dynAlign(processTree, std::make_shared<std::vector<std::string>>(otherTrace));
+            }
         }
     }
 

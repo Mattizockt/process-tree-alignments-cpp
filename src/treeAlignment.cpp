@@ -58,9 +58,9 @@ void calculatePossibleSplits(
     }
 }
 
-std::vector<std::vector<int>> generateSplits(const std::shared_ptr<TreeNode> &node, const std::string &trace)
+std::vector<std::vector<int>> generateSplits(const std::shared_ptr<TreeNode> &node, const std::shared_ptr<std::vector<std::string>> trace)
 {
-    std::unordered_map<char, std::string> letterChildMap;
+    std::unordered_map<std::string, std::string> activityChildMap;
     std::unordered_map<std::string, int> idToPosition;
     std::vector<std::vector<int>> childPositions(node->getChildren().size());
 
@@ -70,19 +70,19 @@ std::vector<std::vector<int>> generateSplits(const std::shared_ptr<TreeNode> &no
         childPositions[count].push_back(-1);
         idToPosition[child->getId()] = count;
 
-        for (const auto &pair : child->getLetters())
+        for (const auto &pair : child->getActivities())
         {
-            letterChildMap[pair.first[0]] = child->getId();
+            activityChildMap[pair.first] = child->getId();
         }
         ++count;
     }
 
-    for (size_t i = 0; i < trace.size(); ++i)
+    for (size_t i = 0; i < trace->size(); ++i)
     {
-        char letter = trace[i];
-        std::string childId = letterChildMap[letter];
+        std::string activity = trace->at(i);
+        std::string childId = activityChildMap[activity];
 
-        if (i + 1 < trace.size() && letterChildMap[trace[i + 1]] == childId)
+        if (i + 1 < trace->size() && activityChildMap[trace->at(i + 1)] == childId)
         {
             continue;
         }
@@ -91,36 +91,38 @@ std::vector<std::vector<int>> generateSplits(const std::shared_ptr<TreeNode> &no
         childPositions[position].push_back(static_cast<int>(i));
     }
 
-    childPositions[count - 1] = {static_cast<int>(trace.size() - 1)};
+    childPositions[count - 1] = {static_cast<int>(trace->size() - 1)};
 
     std::vector<std::vector<int>> splits;
-    calculatePossibleSplits(childPositions, {}, 0, splits, trace.size() - 1);
+    calculatePossibleSplits(childPositions, {}, 0, splits, trace->size() - 1);
 
     return splits;
 }
 
-int dynAlign(std::shared_ptr<TreeNode> node, const std::string &trace);
+int dynAlign(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vector<std::string>> trace);
 
-int dynAlignActivity(std::shared_ptr<TreeNode> node, const std::string &trace)
+int dynAlignActivity(std::shared_ptr<TreeNode> node, std::shared_ptr<std::vector<std::string>> trace)
 {
-    if (trace.find(node->getActivity()) == std::string::npos)
+    const std::string &activity = node->getActivity();
+
+    if (std::find(trace->begin(), trace->end(), activity) == trace->end())
     {
-        return trace.length() + 1;
+        return trace->size() + 1;
     }
     else
     {
-        return trace.length() - 1;
+        return trace->size() - 1;
     }
 }
 
-int dynAlignSilentActivity(std::shared_ptr<TreeNode> node, const std::string &trace)
+int dynAlignSilentActivity(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vector<std::string>> trace)
 {
-    return trace.length();
+    return trace->size();
 }
 
-int dynAlignSequence(std::shared_ptr<TreeNode> node, const std::string &trace)
+int dynAlignSequence(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vector<std::string>> trace)
 {
-    if (trace.length() == 0)
+    if (trace->size() == 0)
     {
         const auto &children = node->getChildren();
         return std::accumulate(children.begin(), children.end(), 0, [&trace](int sum, const auto &child)
@@ -134,7 +136,7 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, const std::string &trace)
     for (const auto &split : segments)
     {
         int costs = 0;
-        std::vector<std::string> splittedTraces = segmentTrace(trace, split);
+        const auto &splittedTraces = segmentTrace(trace, split);
         const auto &children = node->getChildren();
 
         for (int i = 0; i < splittedTraces.size(); i++)
@@ -152,7 +154,7 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, const std::string &trace)
     return minCosts;
 }
 
-int dynAlignXor(std::shared_ptr<TreeNode> node, const std::string &trace)
+int dynAlignXor(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vector<std::string>> trace)
 {
     int minCost = std::numeric_limits<int>::max();
     for (const auto &child : node->getChildren())
@@ -167,20 +169,26 @@ int dynAlignXor(std::shared_ptr<TreeNode> node, const std::string &trace)
     return minCost;
 }
 
-int dynAlignParallel(std::shared_ptr<TreeNode> node, const std::string &trace)
+int dynAlignParallel(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vector<std::string>> trace)
 {
     const auto &children = node->getChildren();
-    std::vector<std::string> subTraces(children.size(), "");
+    std::vector<std::shared_ptr<std::vector<std::string>>> subTraces(children.size());
+    for (auto &ptr : subTraces)
+    {
+        ptr = std::make_shared<std::vector<std::string>>();
+    }
+
     int unmatched = 0;
 
-    for (char c : trace)
+    // if trace empty, no subtraces
+    for (const auto &activity : (*trace))
     {
         bool matched = false;
         for (size_t i = 0; i < children.size(); i++)
         {
-            if (children[i]->getLetters().count(std::string(1, c)) == 1)
+            if (children[i]->getActivities().count(activity) == 1)
             {
-                subTraces[i] += c;
+                subTraces[i]->push_back(activity);
                 matched = true;
                 break;
             }
@@ -202,18 +210,17 @@ int dynAlignParallel(std::shared_ptr<TreeNode> node, const std::string &trace)
     return cost;
 }
 
-int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::string &trace)
+int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vector<std::string>> trace)
 {
     auto &children = node->getChildren();
 
     if (children.size() != 2)
     {
         throw std::runtime_error("Loop node with id: " + node->getId() + " does not have exactly two children.");
-        return -1;
     }
 
     std::vector<std::pair<int, int>> edges;
-    int n = trace.length();
+    int n = trace->size();
     for (int i = 0; i <= n; ++i)
     {
         for (int j = i; j <= n; ++j)
@@ -227,7 +234,7 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::string &trace)
     tempNode->addChild(children[1]);
 
     // TODO later change to unordered map, right now doesn't work because pair can't be used as a key
-    // use hash function 
+    // use hash function
     std::map<std::pair<int, int>, int> qrCosts;
     for (const auto &pair : edges)
     {
@@ -236,7 +243,8 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::string &trace)
             qrCosts[pair] = 0;
             continue;
         }
-        std::string subTrace = trace.substr(pair.first, pair.second - pair.first);
+        // use arrays later to make this operation more efficient
+        auto subTrace = std::make_shared<std::vector<std::string>>(trace->begin() + pair.first, trace->begin() + pair.second);
         int cost = dynAlign(tempNode, subTrace);
         // TODO perhaps use some upper bound like in the demo
         qrCosts[pair] = cost;
@@ -272,7 +280,8 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::string &trace)
     std::unordered_map<int, int> rCosts(n);
     for (size_t i = 0; i <= n; i++)
     {
-        rCosts[i] = dynAlign(children[0], trace.substr(0, i));
+
+        rCosts[i] = dynAlign(children[0], std::make_shared<std::vector<std::string>>(trace->begin(), trace->begin() + i));
     }
 
     int minimalCosts = std::numeric_limits<int>::max();
@@ -288,7 +297,7 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::string &trace)
     return minimalCosts;
 }
 
-int dynAlign(std::shared_ptr<TreeNode> node, const std::string &trace)
+int dynAlign(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vector<std::string>> trace)
 {
     if (costTable.count(node->getId()) > 0)
     {

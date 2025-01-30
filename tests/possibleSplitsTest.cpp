@@ -5,10 +5,20 @@
 #include "../src/treeAlignment.h"
 #include <iostream>
 
+std::shared_ptr<std::vector<std::string>> convertToTraceFormat(const std::string &str)
+{
+    auto vec = std::make_shared<std::vector<std::string>>();
+    for (char ch : str)
+    {
+        vec->push_back(std::string(1, ch));
+    }
+    return vec;
+}
+
 // **Utility function to test possible splits**
 void testPossibleSplits(
     const std::shared_ptr<TreeNode> &root,
-    const std::string &trace,
+    const std::shared_ptr<std::vector<std::string>> trace,
     const std::vector<std::vector<int>> &expected)
 {
     auto splits = generateSplits(root, trace);
@@ -30,12 +40,12 @@ TEST_CASE("generateSplits works correctly")
 
         SECTION("Trace: abbbabbbbabbaba")
         {
-            testPossibleSplits(root, "abbbabbbbabbaba", {{14}});
+            testPossibleSplits(root, convertToTraceFormat("abbbabbbbabbaba"), {{14}});
         }
 
         SECTION("Empty Trace")
         {
-            testPossibleSplits(root, "", {{-1}});
+            testPossibleSplits(root, convertToTraceFormat(""), {{-1}});
         }
     }
 
@@ -46,12 +56,12 @@ TEST_CASE("generateSplits works correctly")
 
         SECTION("Trace: abdc")
         {
-            testPossibleSplits(root, "abdc", {{-1, 3}, {1, 3}});
+            testPossibleSplits(root, convertToTraceFormat("abdc"), {{-1, 3}, {1, 3}});
         }
 
         SECTION("Trace: aaaaadddaadddddddd")
         {
-            testPossibleSplits(root, "aaaaadddaadddddddd", {{-1, 17}, {4, 17}, {9, 17}});
+            testPossibleSplits(root, convertToTraceFormat("aaaaadddaadddddddd"), {{-1, 17}, {4, 17}, {9, 17}});
         }
     }
 
@@ -63,16 +73,41 @@ TEST_CASE("generateSplits works correctly")
 
         SECTION("Trace: dbcda")
         {
-            testPossibleSplits(root, "dbcda",
+            testPossibleSplits(root, convertToTraceFormat("dbcda"),
                                {{-1, -1, 4}, {-1, 0, 4}, {-1, 3, 4}, {1, 1, 4}, {1, 3, 4}, {4, 4, 4}});
         }
 
         SECTION("Trace: dbcdaf")
         {
-            testPossibleSplits(root, "dbcdaf",
+            testPossibleSplits(root, convertToTraceFormat("dbcdaf"),
                                {{-1, -1, 5}, {-1, 0, 5}, {-1, 3, 5}, {1, 1, 5}, {1, 3, 5}, {4, 4, 5}});
         }
     }
+}
+
+bool compareNestedVectors(
+    const std::vector<std::shared_ptr<std::vector<std::string>>> &vec1,
+    const std::vector<std::shared_ptr<std::vector<std::string>>> &vec2)
+{
+    if (vec1.size() != vec2.size())
+    {
+        return false; // Different sizes, so they are not equal
+    }
+
+    for (size_t i = 0; i < vec1.size(); ++i)
+    {
+        if (!vec1[i] || !vec2[i])
+        {
+            return false; // If any pointer is null, comparison fails
+        }
+
+        if (*vec1[i] != *vec2[i])
+        {
+            return false; // Compare the actual vectors
+        }
+    }
+
+    return true;
 }
 
 // **Tests for `segmentTrace`**  I I
@@ -80,26 +115,53 @@ TEST_CASE("segmentTrace works correctly")
 {
     SECTION("Empty Trace")
     {
-        REQUIRE(segmentTrace("", {-1}) == std::vector<std::string>{""});
+        auto segmentedTrace = segmentTrace(convertToTraceFormat(""), {-1}); // Store without reference
+
+        std::vector<std::shared_ptr<std::vector<std::string>>> expected;
+        expected.push_back(std::make_shared<std::vector<std::string>>(std::vector<std::string>()));
+
+        REQUIRE(compareNestedVectors(segmentedTrace, expected)); // Pass actual segmentedTrace
     }
 
     SECTION("Trace: abcdcedffg")
     {
-        std::string trace = "abcdcedffg";
+        auto segmentedTrace = segmentTrace(convertToTraceFormat("abcdcedffg"), {0, 3, 6, 9}); // Store without reference
 
-        SECTION("Normal Split")
-        {
-            REQUIRE(segmentTrace(trace, {0, 3, 6, 9}) == std::vector<std::string>{"a", "bcd", "ced", "ffg"});
-        }
+        std::vector<std::shared_ptr<std::vector<std::string>>> expected;
+        expected.push_back(std::make_shared<std::vector<std::string>>(std::vector<std::string>{"a"}));
+        expected.push_back(std::make_shared<std::vector<std::string>>(std::vector<std::string>{"b", "c", "d"}));
+        expected.push_back(std::make_shared<std::vector<std::string>>(std::vector<std::string>{"c", "e", "d"}));
+        expected.push_back(std::make_shared<std::vector<std::string>>(std::vector<std::string>{"f", "f", "g"}));
+
+        std::cout << std::endl;
+        REQUIRE(compareNestedVectors(segmentedTrace, expected)); // Pass actual segmentedTrace
 
         SECTION("Mid Empty Split")
         {
-            REQUIRE(segmentTrace(trace, {0, 3, 3, 9}) == std::vector<std::string>{"a", "bcd", "", "cedffg"});
+            auto segmentedTrace = segmentTrace(convertToTraceFormat("abcdcedffg"), {0, 3, 3, 9});
+
+            std::vector<std::shared_ptr<std::vector<std::string>>> expected;
+            expected.push_back(std::make_shared<std::vector<std::string>>(std::vector<std::string>{"a"}));
+            expected.push_back(std::make_shared<std::vector<std::string>>(std::vector<std::string>{"b", "c", "d"}));
+            expected.push_back(std::make_shared<std::vector<std::string>>(std::vector<std::string>()));
+            expected.push_back(std::make_shared<std::vector<std::string>>(std::vector<std::string>{"c", "e", "d", "f", "f", "g"}));
+
+            std::cout << std::endl;
+
+            REQUIRE(compareNestedVectors(segmentedTrace, expected));
         }
 
         SECTION("Start Empty Split")
         {
-            REQUIRE(segmentTrace(trace, {-1, -1, 2, 9}) == std::vector<std::string>{"", "", "abc", "dcedffg"});
+            auto segmentedTrace = segmentTrace(convertToTraceFormat("abcdcedffg"), {-1, -1, 2, 9});
+
+            std::vector<std::shared_ptr<std::vector<std::string>>> expected;
+            expected.push_back(std::make_shared<std::vector<std::string>>(std::vector<std::string>()));
+            expected.push_back(std::make_shared<std::vector<std::string>>(std::vector<std::string>()));
+            expected.push_back(std::make_shared<std::vector<std::string>>(std::vector<std::string>{"a", "b", "c"}));
+            expected.push_back(std::make_shared<std::vector<std::string>>(std::vector<std::string>{"d", "c", "e", "d", "f", "f", "g"}));
+
+            REQUIRE(compareNestedVectors(segmentedTrace, expected));
         }
     }
 }
@@ -110,26 +172,26 @@ TEST_CASE("dynAlign works correctly")
     auto root = constructTree({{PARALLEL, {std::make_shared<TreeNode>(ACTIVITY, "a"), std::make_shared<TreeNode>(ACTIVITY, "b"), std::make_shared<TreeNode>(ACTIVITY, "e")}},
                                {XOR, {std::make_shared<TreeNode>(ACTIVITY, "c"), std::make_shared<TreeNode>(ACTIVITY, "d")}}}); // <-- Only one closing brace needed
 
-    root->fillLetterMaps();
+    root->fillActivityMaps();
 
     SECTION("Empty Trace")
     {
-        REQUIRE(dynAlign(root, "") == 4);
+        REQUIRE(dynAlign(root, convertToTraceFormat("")) == 4);
     }
 
     SECTION("Trace: eba")
     {
-        REQUIRE(dynAlign(root, "eba") == 1);
+        REQUIRE(dynAlign(root, convertToTraceFormat("eba")) == 1);
     }
 
     SECTION("Trace: ebad")
     {
-        REQUIRE(dynAlign(root, "ebad") == 0);
+        REQUIRE(dynAlign(root, convertToTraceFormat("ebad")) == 0);
     }
 
     SECTION("Trace: babebbdddcbb")
     {
-        REQUIRE(dynAlign(root, "babebbdddcbb") == 8);
+        REQUIRE(dynAlign(root, convertToTraceFormat("babebbdddcbb")) == 8);
     }
 
     SECTION("Loop Case")
@@ -142,26 +204,26 @@ TEST_CASE("dynAlign works correctly")
         // Now use constructTree correctly
         auto loopRoot = constructTree({{REDO_LOOP, {sequenceNode, std::make_shared<TreeNode>(ACTIVITY, "f")}}});
 
-        loopRoot->fillLetterMaps();
+        loopRoot->fillActivityMaps();
 
         SECTION("Trace: abfabfabfabfabfabfabfabf")
         {
-            REQUIRE(dynAlign(loopRoot, "abfabfabfabfabfabfabfabf") == 0);
+            REQUIRE(dynAlign(loopRoot, convertToTraceFormat("abfabfabfabfabfabfabfabf")) == 0);
         }
 
         SECTION("Trace: abababababababab123123abababababf")
         {
-            REQUIRE(dynAlign(loopRoot, "abababababababab123123abababababf") == 17);
+            REQUIRE(dynAlign(loopRoot, convertToTraceFormat("abababababababab123123abababababf")) == 17);
         }
 
         SECTION("Trace: abbbbf")
         {
-            REQUIRE(dynAlign(loopRoot, "abbbbf") == 2);
+            REQUIRE(dynAlign(loopRoot, convertToTraceFormat("abbbbf")) == 2);
         }
 
         SECTION("Empty Trace")
         {
-            REQUIRE(dynAlign(loopRoot, "") == 2);
+            REQUIRE(dynAlign(loopRoot, convertToTraceFormat("")) == 2);
         }
     }
 }
