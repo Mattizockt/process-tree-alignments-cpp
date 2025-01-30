@@ -9,6 +9,36 @@
 #include <unordered_map>
 #include <filesystem>
 
+// Extract activities from a single trace node
+std::vector<std::string> extractActivitiesFromTrace(rapidxml::xml_node<> *traceNode)
+{
+    std::vector<std::string> sequence;
+
+    if (!traceNode)
+        return sequence;
+
+    for (rapidxml::xml_node<> *eventNode = traceNode->first_node("event");
+         eventNode;
+         eventNode = eventNode->next_sibling("event"))
+    {
+        for (rapidxml::xml_node<> *stringNode = eventNode->first_node("string");
+             stringNode;
+             stringNode = stringNode->next_sibling("string"))
+        {
+            rapidxml::xml_attribute<> *keyAttr = stringNode->first_attribute("key");
+            rapidxml::xml_attribute<> *valueAttr = stringNode->first_attribute("value");
+
+            if (keyAttr && valueAttr && std::string(keyAttr->value()) == "concept:name")
+            {
+                sequence.emplace_back(valueAttr->value()); // Use emplace_back for efficiency
+            }
+        }
+    }
+
+    return sequence;
+}
+
+// Parse the XES file and extract traces
 std::vector<std::vector<std::string>> parseXes(const std::string &filePath)
 {
     rapidxml::file<> xmlFile(filePath.c_str());
@@ -17,31 +47,17 @@ std::vector<std::vector<std::string>> parseXes(const std::string &filePath)
 
     std::vector<std::vector<std::string>> traceSequences;
 
-    for (rapidxml::xml_node<> *traceNode = doc.first_node("log")->first_node("trace");
+    rapidxml::xml_node<> *logNode = doc.first_node("log");
+    if (!logNode)
+    {
+        throw std::runtime_error("Error: <log> node not found in XML.");
+    }
+
+    for (rapidxml::xml_node<> *traceNode = logNode->first_node("trace");
          traceNode;
          traceNode = traceNode->next_sibling("trace"))
     {
-        std::vector<std::string> sequence; // Vector to store activities for this trace
-
-        for (rapidxml::xml_node<> *eventNode = traceNode->first_node("event");
-             eventNode;
-             eventNode = eventNode->next_sibling("event"))
-        {
-            for (rapidxml::xml_node<> *stringNode = eventNode->first_node("string");
-                 stringNode;
-                 stringNode = stringNode->next_sibling("string"))
-            {
-                rapidxml::xml_attribute<> *keyAttr = stringNode->first_attribute("key");
-                rapidxml::xml_attribute<> *valueAttr = stringNode->first_attribute("value");
-
-                if (keyAttr && valueAttr && std::string(keyAttr->value()) == "concept:name")
-                {
-                    sequence.push_back(valueAttr->value()); // Store each activity separately
-                }
-            }
-        }
-
-        traceSequences.push_back(sequence); // Store the trace
+        traceSequences.emplace_back(extractActivitiesFromTrace(traceNode));
     }
 
     return traceSequences;
@@ -50,27 +66,26 @@ std::vector<std::vector<std::string>> parseXes(const std::string &filePath)
 std::shared_ptr<TreeNode> createNode(const std::string &nodeName, rapidxml::xml_node<> *sibling)
 {
     if (!sibling || !sibling->first_attribute("id"))
-    {
         throw std::runtime_error("Error: Missing 'id' attribute in node.");
-    }
 
     std::string nodeId = sibling->first_attribute("id")->value();
 
     static const std::unordered_map<std::string, Operation> nodeTypeMap = {
-        {"sequence", SEQUENCE},
-        {"and", PARALLEL},
-        {"xor", XOR},
-        {"xorLoop", REDO_LOOP},
-        {"manualTask", ACTIVITY},
-        {"automaticTask", SILENT_ACTIVITY}};
+        {"sequence", SEQUENCE}, {"and", PARALLEL}, {"xor", XOR}, {"xorLoop", REDO_LOOP}, {"manualTask", ACTIVITY}, {"automaticTask", SILENT_ACTIVITY}};
 
     auto it = nodeTypeMap.find(nodeName);
-    if (it != nodeTypeMap.end())
+    if (it == nodeTypeMap.end())
+        throw std::runtime_error("Error: Unsupported node type '" + nodeName + "'");
+
+    if (it->second == ACTIVITY)
     {
-        return std::make_shared<TreeNode>(it->second, "", nodeId);
+        rapidxml::xml_attribute<> *nameAttr = sibling->first_attribute("name");
+        if (!nameAttr)
+            throw std::runtime_error("Error: Missing 'name' attribute for activity node.");
+        return std::make_shared<TreeNode>(ACTIVITY, nameAttr->value(), nodeId);
     }
 
-    throw std::runtime_error("Error: Unsupported node type '" + nodeName + "'");
+    return std::make_shared<TreeNode>(it->second, "", nodeId);
 }
 
 std::shared_ptr<TreeNode> parsePtml(const std::string &filePath)
@@ -79,28 +94,28 @@ std::shared_ptr<TreeNode> parsePtml(const std::string &filePath)
     rapidxml::xml_document<> doc;
     doc.parse<0>(xmlFile.data());
 
-    std::cout << "File size: " << xmlFile.size() << " bytes" << std::endl;
-
     rapidxml::xml_node<> *processTreeNode = doc.first_node("ptml")->first_node("processTree");
     if (!processTreeNode)
     {
         throw std::runtime_error("Error: <processTree> node not found.");
     }
 
-    rapidxml::xml_node<> *node = processTreeNode->first_node();
-    if (!node)
+    rapidxml::xml_attribute<> *rootAttr = processTreeNode->first_attribute("root");
+    if (!rootAttr)
     {
-        throw std::runtime_error("Error: No child nodes found in <processTree>.");
+        throw std::runtime_error("Error: Missing 'root' attribute in <processTree>.");
     }
+    std::string rootId = rootAttr->value();
 
     std::unordered_map<std::string, std::shared_ptr<TreeNode>> idToNode;
-    for (rapidxml::xml_node<> *sibling = node; sibling; sibling = sibling->next_sibling())
+    std::unordered_map<std::string, bool> referencedNodes;
+
+    for (rapidxml::xml_node<> *sibling = processTreeNode->first_node(); sibling; sibling = sibling->next_sibling())
     {
         std::string siblingName = sibling->name();
 
         if (siblingName == "parentsNode")
         {
-            // check if element exists
             rapidxml::xml_attribute<> *sourceAttr = sibling->first_attribute("sourceId");
             rapidxml::xml_attribute<> *targetAttr = sibling->first_attribute("targetId");
 
@@ -112,36 +127,49 @@ std::shared_ptr<TreeNode> parsePtml(const std::string &filePath)
             std::string parentId = sourceAttr->value();
             std::string childId = targetAttr->value();
 
-            if (idToNode.find(parentId) == idToNode.end() || idToNode.find(childId) == idToNode.end())
+            // Ensure parent & child nodes exist before linking
+            if (idToNode.find(parentId) == idToNode.end())
             {
-                throw std::runtime_error("Error: Invalid parent-child reference.");
+                throw std::runtime_error("Error: Parent ID not found: " + parentId);
+            }
+            if (idToNode.find(childId) == idToNode.end())
+            {
+                throw std::runtime_error("Error: Child ID not found: " + childId);
             }
 
             idToNode[parentId]->addChild(idToNode[childId]);
+            referencedNodes[childId] = true; // Mark child as referenced
         }
         else
         {
+            // Create a new node
             std::shared_ptr<TreeNode> newNode = createNode(siblingName, sibling);
+
+            // Ensure no duplicate IDs
+            if (idToNode.find(newNode->getId()) != idToNode.end())
+            {
+                throw std::runtime_error("Error: Duplicate node ID found: " + newNode->getId());
+            }
+
             idToNode[newNode->getId()] = newNode;
         }
     }
 
-    rapidxml::xml_attribute<> *rootAttr = processTreeNode->first_attribute("root");
-    if (!rootAttr)
-    {
-        throw std::runtime_error("Error: Missing 'root' attribute in <processTree>.");
-    }
-
-    std::string rootId = rootAttr->value();
     if (idToNode.find(rootId) == idToNode.end())
     {
-        throw std::runtime_error("Error: Root node ID not found in parsed nodes.");
+        throw std::runtime_error("Error: Root node ID not found: " + rootId);
     }
 
-    auto root = idToNode[rootId];
-    root->printTree();
-    std::cout << std::endl;
-    return root;
+    for (const auto &entry : idToNode)
+    {
+        if (entry.first != rootId && referencedNodes.find(entry.first) == referencedNodes.end())
+        {
+            std::cerr << "Warning: Node ID " << entry.first << " is not linked to any parent.\n";
+        }
+    }
+
+    idToNode[rootId]->printTree();
+    return idToNode[rootId]; // Return root node
 }
 
 // TODO use python parser to bring into the correct format
@@ -186,7 +214,8 @@ std::vector<std::string> createPtmlXesPairs()
 
             // change to vector of strings
 
-            for (const auto &otherTrace : trace) {
+            for (const auto &otherTrace : trace)
+            {
                 // TODO improve later
                 // dynAlign(processTree, std::make_shared<std::vector<std::string>>(otherTrace));
             }
