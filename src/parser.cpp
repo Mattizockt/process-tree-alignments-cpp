@@ -9,10 +9,12 @@
 #include <unordered_map>
 #include <filesystem>
 
+using StringVec = std::vector<std::string>;
+
 // Extract activities from a single trace node
-std::vector<std::string> extractActivitiesFromTrace(rapidxml::xml_node<> *traceNode)
+StringVec extractActivitiesFromTrace(rapidxml::xml_node<> *traceNode)
 {
-    std::vector<std::string> sequence;
+    StringVec sequence;
 
     if (!traceNode)
         return sequence;
@@ -39,13 +41,13 @@ std::vector<std::string> extractActivitiesFromTrace(rapidxml::xml_node<> *traceN
 }
 
 // Parse the XES file and extract traces
-std::vector<std::vector<std::string>> parseXes(const std::string &filePath)
+std::vector<StringVec> parseXes(const std::string &filePath)
 {
     rapidxml::file<> xmlFile(filePath.c_str());
     rapidxml::xml_document<> doc;
     doc.parse<0>(xmlFile.data());
 
-    std::vector<std::vector<std::string>> traceSequences;
+    std::vector<StringVec> traceSequences;
 
     rapidxml::xml_node<> *logNode = doc.first_node("log");
     if (!logNode)
@@ -71,7 +73,7 @@ std::shared_ptr<TreeNode> createNode(const std::string &nodeName, rapidxml::xml_
     std::string nodeId = sibling->first_attribute("id")->value();
 
     static const std::unordered_map<std::string, Operation> nodeTypeMap = {
-        {"sequence", SEQUENCE}, {"and", PARALLEL}, {"xor", XOR}, {"xorLoop", REDO_LOOP}, {"manualTask", ACTIVITY}, {"automaticTask", SILENT_ACTIVITY}};
+        {"sequence", SEQUENCE}, {"and", PARALLEL}, {"xor", XOR}, {"xorLoop", XOR_LOOP}, {"manualTask", ACTIVITY}, {"automaticTask", SILENT_ACTIVITY}, {"redoLoop", REDO_LOOP}};
 
     auto it = nodeTypeMap.find(nodeName);
     if (it == nodeTypeMap.end())
@@ -168,16 +170,16 @@ std::shared_ptr<TreeNode> parsePtml(const std::string &filePath)
         }
     }
 
-    idToNode[rootId]->printTree();
+    idToNode[rootId]->fillActivityMaps();
     return idToNode[rootId]; // Return root node
 }
 
 // TODO use python parser to bring into the correct format
-std::vector<std::string> createPtmlXesPairs()
+StringVec createPtmlXesPairs()
 {
 
     std::string xesPath = "../data/xes/"; // Relative xesPath to directory
-    std::vector<std::string> fileNames;
+    StringVec fileNames;
 
     try
     {
@@ -195,10 +197,10 @@ std::vector<std::string> createPtmlXesPairs()
         return fileNames; // Exit if directory is not found or inaccessible
     }
 
-    printVector(fileNames);
-
     std::string ptmlPath = "../data/ptml/";
-    std::vector<std::string> fileEndings = {"_pt00", "_pt10", "_pt25", "_pt50"};
+    StringVec fileEndings = {"_pt00", "_pt10", "_pt25", "_pt50"};
+
+    // maybe some error checking
 
     for (const auto &fileName : fileNames)
     {
@@ -217,7 +219,15 @@ std::vector<std::string> createPtmlXesPairs()
             for (const auto &otherTrace : trace)
             {
                 // TODO improve later
-                // dynAlign(processTree, std::make_shared<std::vector<std::string>>(otherTrace));
+                std::cout << "PTML Filename: " << filePtmlPath << std::endl;
+                // std::cout << "This process tree: " << std::endl;
+                // processTree->printTree();
+                // std::cout << std::endl;
+                std::cout << "And this Trace: " << std::endl;
+                printVector(otherTrace);
+                // std::cout << std::endl;
+                std::cout << "have this cost: " << dynAlign(processTree, std::make_shared<StringVec>(otherTrace)) << std::endl;
+                std::cout << std::endl;
             }
         }
     }

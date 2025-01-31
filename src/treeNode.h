@@ -12,12 +12,13 @@ extern std::unordered_map<std::string, std::unordered_map<std::shared_ptr<std::v
 
 enum Operation
 {
-    SEQUENCE,
-    PARALLEL,
-    XOR,
-    REDO_LOOP,
-    ACTIVITY,
-    SILENT_ACTIVITY
+    SEQUENCE, // 0
+    PARALLEL, // 1
+    XOR, // 2
+    REDO_LOOP, // 3
+    XOR_LOOP, // 4
+    ACTIVITY, // 5
+    SILENT_ACTIVITY // 6
 };
 
 class TreeNode

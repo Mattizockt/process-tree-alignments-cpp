@@ -15,7 +15,7 @@ set(SOURCE_FILES
 
 # Define source files for unit tests (exclude main.cpp)
 set(TEST_FILES
-    tests/possibleSplitsTest.cpp
+    tests/alignTest.cpp
     src/treeNode.cpp
     src/treeAlignment.cpp
     src/utils.cpp
