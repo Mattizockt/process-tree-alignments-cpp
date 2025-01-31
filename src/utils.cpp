@@ -29,11 +29,11 @@ std::shared_ptr<std::vector<std::string>> pruneInputTrace(const std::shared_ptr<
 
 void printVector(const std::vector<std::string> &vec)
 {
-    std::cout << "Vector contents:\n";
     for (const std::string &str : vec)
     {
-        std::cout << str << std::endl;
+        std::cout << str << ", ";
     }
+    std::cout << std::endl;
 }
 
 void printNestedVector(const std::vector<std::vector<int>> &vec)

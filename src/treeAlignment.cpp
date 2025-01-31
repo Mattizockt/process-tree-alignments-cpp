@@ -8,6 +8,8 @@
 #include <algorithm>
 #include <iostream>
 
+// apply type alias
+
 // custom hash function to hash pairs in an unordered map
 template <class A, class B>
 struct std::hash<std::pair<A, B>>
@@ -243,8 +245,6 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vect
         throw std::runtime_error("Loop node with id: " + node->getId() + " does not have exactly two children.");
     }
 
-    // TODO refactor treeAlignment.cpp, refactor test.cpp, move segmenttrace into tree alignment
-    // maybe use unique pointer
     std::vector<std::pair<int, int>> edges;
     int n = trace->size();
     for (int i = 0; i <= n; ++i)
@@ -260,7 +260,6 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vect
     tempNode->addChild(children[0]);
     tempNode->addChild(children[1]);
 
-    // or use a pointer
     std::unordered_map<std::pair<int, int>, int, PairHash> qrCosts;
     for (const auto &edge : edges)
     {
@@ -284,7 +283,7 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vect
             {
                 continue;
             }
-            
+
             int optimalCost = qrCosts[edge];
             for (size_t j = edge.first + 1; j <= edge.second; j++)
             {
@@ -322,6 +321,25 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vect
     return minimalCosts;
 }
 
+// TODO perhaps implement refactor tree function in the future to remove xor loops
+// because child creation is expensive
+int dynAlignXorLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vector<std::string>> trace)
+{
+    auto &children = node->getChildren();
+    auto tempXorNode = std::make_shared<TreeNode>(XOR);
+    auto tempRedoLoop = std::make_shared<TreeNode>(REDO_LOOP);
+
+    tempRedoLoop->addChild(children[0]);
+    tempRedoLoop->addChild(tempXorNode);
+
+    for (int i = 1; i < children.size(); i++)
+    {
+        tempXorNode->addChild(children[i]);
+    }
+
+    return dynAlignLoop(tempRedoLoop, trace);
+}
+
 int dynAlign(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vector<std::string>> trace)
 {
     if (costTable.count(node->getId()) > 0)
@@ -346,6 +364,9 @@ int dynAlign(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vector<s
         break;
     case REDO_LOOP:
         costs = dynAlignLoop(node, trace);
+        break;
+    case XOR_LOOP:
+        costs = dynAlignXorLoop(node, trace);
         break;
     case ACTIVITY:
         costs = dynAlignActivity(node, trace);
