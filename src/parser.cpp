@@ -175,10 +175,8 @@ std::shared_ptr<TreeNode> parsePtml(const std::string &filePath)
 }
 
 // TODO use python parser to bring into the correct format
-StringVec createPtmlXesPairs()
+StringVec createPtmlXesPairs(const std::string xesPath,const std::string ptmlPath)
 {
-
-    std::string xesPath = "../data/xes/"; // Relative xesPath to directory
     StringVec fileNames;
 
     try
@@ -197,7 +195,6 @@ StringVec createPtmlXesPairs()
         return fileNames; // Exit if directory is not found or inaccessible
     }
 
-    std::string ptmlPath = "../data/ptml/";
     StringVec fileEndings = {"_pt00", "_pt10", "_pt25", "_pt50"};
 
     // maybe some error checking
