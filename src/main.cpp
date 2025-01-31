@@ -6,11 +6,9 @@
 
 int main()
 {
-    createPtmlXesPairs();
+    const std::string xesPath = "../data/xes/"; // Relative xesPath to directory
+    const std::string ptmlPath = "../data/ptml/";
 
-    // const std::string xesPath = "../data/xes/running-example-just-two-cases.xes";
-    // parseXes(xesPath);
-
-    // const std::string ptmlPath = "../data/ptml/running-example-just-two-cases_pt00.ptml";
-    // parsePtml(ptmlPath);
+    // relative path from src directory
+    createPtmlXesPairs(xesPath, ptmlPath);
 }

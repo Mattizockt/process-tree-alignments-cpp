@@ -2,5 +2,4 @@ build/
 .vscode/
 data/ptml
 data/xes
-!data/ptml/.gitkeep
-!data/xes/.gitkeep
+.venv

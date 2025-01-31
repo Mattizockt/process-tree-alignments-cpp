@@ -6,6 +6,6 @@
 
 std::vector<std::vector<std::string>> parseXes(const std::string &filePath);
 std::shared_ptr<TreeNode> parsePtml(const std::string &filePath);
-std::vector<std::string> createPtmlXesPairs();
+std::vector<std::string> createPtmlXesPairs(const std::string xesPath, const std::string ptmlPath);
     
 #endif // PARSER_H
