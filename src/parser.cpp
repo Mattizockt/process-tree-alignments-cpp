@@ -1,8 +1,10 @@
 #include "../include/rapidxml_utils.hpp"
+#include "../include/nlohmann/json.hpp"
 #include "parser.h"
 #include "utils.h"
 #include "treeNode.h"
 #include "treeAlignment.h"
+#include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -175,10 +177,9 @@ std::shared_ptr<TreeNode> parsePtml(const std::string &filePath)
 }
 
 // TODO use python parser to bring into the correct format
-StringVec createPtmlXesPairs(const std::string xesPath,const std::string ptmlPath)
+void createPtmlXesPairs(const std::string xesPath, const std::string ptmlPath)
 {
     StringVec fileNames;
-
     try
     {
         for (const auto &entry : std::filesystem::directory_iterator(xesPath))
@@ -192,12 +193,16 @@ StringVec createPtmlXesPairs(const std::string xesPath,const std::string ptmlPat
     catch (const std::filesystem::filesystem_error &e)
     {
         std::cerr << "Error: " << e.what() << '\n';
-        return fileNames; // Exit if directory is not found or inaccessible
     }
 
-    StringVec fileEndings = {"_pt00", "_pt10", "_pt25", "_pt50"};
+    std::ofstream outFile("../output/alignCost.json"); // Create and open a file
+    if (!outFile)
+    {
+        std::cerr << "Error: Could not create the file!" << std::endl;
+    }
 
-    // maybe some error checking
+    nlohmann::json evalJson;
+    StringVec fileEndings = {"_pt00", "_pt10", "_pt25", "_pt50", "_hard5_pt00", "_hard5_pt10", "_hard5_pt25", "_hard5_pt50"};
 
     for (const auto &fileName : fileNames)
     {
@@ -206,28 +211,20 @@ StringVec createPtmlXesPairs(const std::string xesPath,const std::string ptmlPat
 
         for (const auto &fileEnding : fileEndings)
         {
-            const std::string filePtmlPath = ptmlPath + fileName + fileEnding + ".ptml";
-            std::cout << filePtmlPath << std::endl;
+            const std::string ptmlName = fileName + fileEnding + ".ptml";
+            auto processTree = parsePtml(ptmlPath + ptmlName);
 
-            auto processTree = parsePtml(filePtmlPath);
-
-            // change to vector of strings
-
+            // TODO change later
+            int count = 0;
             for (const auto &otherTrace : trace)
             {
-                // TODO improve later
-                std::cout << "PTML Filename: " << filePtmlPath << std::endl;
-                // std::cout << "This process tree: " << std::endl;
-                // processTree->printTree();
-                // std::cout << std::endl;
-                std::cout << "And this Trace: " << std::endl;
-                printVector(otherTrace);
-                // std::cout << std::endl;
-                std::cout << "have this cost: " << dynAlign(processTree, std::make_shared<StringVec>(otherTrace)) << std::endl;
-                std::cout << std::endl;
+                auto cost = dynAlign(processTree, std::make_shared<StringVec>(otherTrace));
+                evalJson[ptmlName][std::to_string(count)]["0"] = cost;
+                count++;
             }
         }
     }
 
-    return fileNames;
+    outFile << evalJson.dump(4);
+    outFile.close();
 }

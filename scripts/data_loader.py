@@ -1,9 +1,9 @@
-import pandas as pd
+from pathlib import Path
 from pm4py import ProcessTree, discover_process_tree_inductive
+from pm4py.objects.log.obj import EventLog
 from pm4py.objects.process_tree.utils.generic import get_leaves
 import math
-from pm4py.objects.log.obj import EventLog
-from pathlib import Path
+import pandas as pd
 import pm4py
 
 

@@ -3,3 +3,5 @@ build/
 data/ptml
 data/xes
 .venv
+output/
+scripts/__pycache__
