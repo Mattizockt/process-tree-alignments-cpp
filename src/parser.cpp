@@ -202,13 +202,12 @@ std::shared_ptr<TreeNode> parsePtml(const std::string &filePath)
     return idToNode[rootId]; // Return root node
 }
 
-StringVec generatePtmlNames(const std::string &baseName, const StringVec &fileEndings, const std::string &ptmlPath)
+StringVec generatePtmlNames(const std::string &baseName, const StringVec &fileEndings)
 {
-    std::cout << "basename: " << baseName << " ptmlpath: " << ptmlPath;
     StringVec ptmlNames;
     for (const auto &ending : fileEndings)
     {
-        ptmlNames.push_back(ptmlPath + baseName + ending + ".ptml");
+        ptmlNames.push_back(baseName + ending + ".ptml");
     }
     return ptmlNames;
 }
@@ -219,6 +218,7 @@ void parseAndAlign(const std::string &xesPath, const std::string &ptmlPath, cons
 
     try
     {
+        std::cout << std::filesystem::current_path() << "\n";
         for (const auto &entry : std::filesystem::directory_iterator(xesPath))
         {
             if (entry.is_regular_file())
@@ -251,22 +251,23 @@ void parseAndAlign(const std::string &xesPath, const std::string &ptmlPath, cons
         bool basePtmlExists = std::filesystem::exists(ptmlPath + fileName + ".ptml");
 
         StringVec ptmlFiles = basePtmlExists ? StringVec{fileName + ".ptml"}
-                                             : generatePtmlNames(fileName, fileEndings, ptmlPath);
+                                             : generatePtmlNames(fileName, fileEndings);
 
-        for (const auto &ptmlName : ptmlFiles)
+        for (const auto &ptmlFile : ptmlFiles)
         {
-            if (!std::filesystem::exists(ptmlName))
+            const auto ptmlFilePath = ptmlPath + ptmlFile;
+            if (!std::filesystem::exists(ptmlFilePath))
             {
-                std::cerr << "File: " << ptmlPath << ptmlName << " doesn't exist.\n";
+                std::cerr << "File: " << ptmlPath << ptmlFile << " doesn't exist.\n";
                 continue;
             }
 
-            auto processTree = parsePtml(ptmlName);
+            auto processTree = parsePtml(ptmlFilePath);
             int count = 0;
             for (const auto &otherTrace : trace)
             {
                 auto cost = dynAlign(processTree, std::make_shared<StringVec>(otherTrace));
-                evalJson[ptmlName][std::to_string(count++)]["adv. dyn. c++"] = cost;
+                evalJson[ptmlFile][std::to_string(count++)]["adv. dyn. c++"] = cost;
             }
         }
     }

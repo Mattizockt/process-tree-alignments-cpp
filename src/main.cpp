@@ -7,15 +7,13 @@
 
 int main(int argc, char* argv[])
 {
-    std::cout << "Number of arguments: " << argc << std::endl;
-    for (int i = 0; i < argc; ++i) {
-        std::cout << "Argument " << i << ": " << argv[i] << std::endl;
-    }
-
-    const std::string xesPath = "../data/xes/"; // Relative xesPath to directory
-    const std::string ptmlPath = "../data/ptml/";
-    const std::string outputFileName = "../output/alignCost.json";
-
+    const std::string xesPath = "data/xes/"; // Relative xesPath to directory from working dir
+    const std::string ptmlPath = "data/ptml/";
+    
+    std::string outputFile = "output/defaultOutput.json";
     // relative path from src directory
-    parseAndAlign(xesPath, ptmlPath, outputFileName);
+    if (argc == 2) {
+        outputFile = argv[1];
+    }
+    parseAndAlign(xesPath, ptmlPath, outputFile);
 }
