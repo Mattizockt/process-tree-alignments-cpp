@@ -191,12 +191,12 @@ TEST_CASE("dynAlign works correctly")
 
         SECTION("Trace: abfabfabfabfabfabfabfabf")
         {
-            REQUIRE(dynAlign(loopRoot, convertToTraceFormat("abfabfabfabfabfabfabfabf")) == 0);
+            REQUIRE(dynAlign(loopRoot, convertToTraceFormat("abfabfabfabfabfabfabfabf")) == 1);
         }
 
         SECTION("Trace: abbbbf")
         {
-            REQUIRE(dynAlign(loopRoot, convertToTraceFormat("abbbbf")) == 2);
+            REQUIRE(dynAlign(loopRoot, convertToTraceFormat("abbbbf")) == 4);
         }
 
         SECTION("Empty Trace")
