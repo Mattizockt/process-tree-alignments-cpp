@@ -49,7 +49,8 @@ std::vector<StringVec> parseXes(const std::string &filePath)
     rapidxml::xml_document<> doc;
     doc.parse<0>(xmlFile.data());
 
-    std::vector<StringVec> traceSequences;
+    std::map<std::string, StringVec> traceMap;
+    // std::vector<StringVec> traceSequences;
 
     rapidxml::xml_node<> *logNode = doc.first_node("log");
     if (!logNode)
@@ -61,10 +62,35 @@ std::vector<StringVec> parseXes(const std::string &filePath)
          traceNode;
          traceNode = traceNode->next_sibling("trace"))
     {
-        traceSequences.emplace_back(extractActivitiesFromTrace(traceNode));
+        rapidxml::xml_node<> *nameNode = traceNode->first_node("string");
+        std::string traceValue = "UNKNOWN";
+
+        while (nameNode)
+        {
+            if (std::string(nameNode->first_attribute("key")->value()) == "concept:name")
+            {
+                traceValue = nameNode->first_attribute("value")->value();
+                break;
+            }
+            nameNode = nameNode->next_sibling("string");
+        }
+
+        if (traceValue != "UNKNOWN")
+        {
+            traceMap[traceValue] = extractActivitiesFromTrace(traceNode);
+        }
+        else
+        {
+            std::cerr << "Trace in Xes-files did not have an index";
+        }
+        // traceSequences.emplace_back(extractActivitiesFromTrace(traceNode));
     }
 
-    return traceSequences;
+    std::vector<StringVec> values;
+    for (const auto &pair : traceMap)
+        values.push_back(pair.second);
+
+    return values;
 }
 
 std::shared_ptr<TreeNode> createNode(const std::string &nodeName, rapidxml::xml_node<> *sibling)
@@ -176,16 +202,27 @@ std::shared_ptr<TreeNode> parsePtml(const std::string &filePath)
     return idToNode[rootId]; // Return root node
 }
 
-// TODO use python parser to bring into the correct format
-void createPtmlXesPairs(const std::string xesPath, const std::string ptmlPath)
+StringVec generatePtmlNames(const std::string &baseName, const StringVec &fileEndings, const std::string &ptmlPath)
+{
+    std::cout << "basename: " << baseName << " ptmlpath: " << ptmlPath;
+    StringVec ptmlNames;
+    for (const auto &ending : fileEndings)
+    {
+        ptmlNames.push_back(ptmlPath + baseName + ending + ".ptml");
+    }
+    return ptmlNames;
+}
+
+void parseAndAlign(const std::string &xesPath, const std::string &ptmlPath, const std::string &outputFileName)
 {
     StringVec fileNames;
+
     try
     {
         for (const auto &entry : std::filesystem::directory_iterator(xesPath))
         {
             if (entry.is_regular_file())
-            { // Check if it's a file (not a directory)
+            {
                 fileNames.push_back(entry.path().stem().string());
             }
         }
@@ -193,38 +230,46 @@ void createPtmlXesPairs(const std::string xesPath, const std::string ptmlPath)
     catch (const std::filesystem::filesystem_error &e)
     {
         std::cerr << "Error: " << e.what() << '\n';
+        return;
     }
 
-    std::ofstream outFile("../output/alignCost.json"); // Create and open a file
+    std::ofstream outFile(outputFileName);
     if (!outFile)
     {
         std::cerr << "Error: Could not create the file!" << std::endl;
+        return;
     }
 
     nlohmann::json evalJson;
-    StringVec fileEndings = {"_pt00", "_pt10", "_pt25", "_pt50", "_hard5_pt00", "_hard5_pt10", "_hard5_pt25", "_hard5_pt50"};
+    StringVec fileEndings = {"_pt00", "_pt10", "_pt25", "_pt50"};
 
     for (const auto &fileName : fileNames)
     {
         const std::string fileXesPath = xesPath + fileName + ".xes";
         auto trace = parseXes(fileXesPath);
 
-        for (const auto &fileEnding : fileEndings)
-        {
-            const std::string ptmlName = fileName + fileEnding + ".ptml";
-            auto processTree = parsePtml(ptmlPath + ptmlName);
+        bool basePtmlExists = std::filesystem::exists(ptmlPath + fileName + ".ptml");
 
-            // TODO change later
+        StringVec ptmlFiles = basePtmlExists ? StringVec{fileName + ".ptml"}
+                                             : generatePtmlNames(fileName, fileEndings, ptmlPath);
+
+        for (const auto &ptmlName : ptmlFiles)
+        {
+            if (!std::filesystem::exists(ptmlName))
+            {
+                std::cerr << "File: " << ptmlPath << ptmlName << " doesn't exist.\n";
+                continue;
+            }
+
+            auto processTree = parsePtml(ptmlName);
             int count = 0;
             for (const auto &otherTrace : trace)
             {
                 auto cost = dynAlign(processTree, std::make_shared<StringVec>(otherTrace));
-                evalJson[ptmlName][std::to_string(count)]["0"] = cost;
-                count++;
+                evalJson[ptmlName][std::to_string(count++)]["adv. dyn. c++"] = cost;
             }
         }
     }
 
     outFile << evalJson.dump(4);
-    outFile.close();
 }

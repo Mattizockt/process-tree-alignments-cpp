@@ -8,18 +8,6 @@
 #include <algorithm>
 #include <iostream>
 
-// apply type alias
-
-// custom hash function to hash pairs in an unordered map
-template <class A, class B>
-struct std::hash<std::pair<A, B>>
-{
-    size_t operator()(const pair<A, B> &p) const
-    {
-        return std::rotl(hash<A>{}(p.first), 1) ^
-               hash<B>{}(p.second);
-    }
-};
 
 // example: trace [a,c,c,d,g], splits [-1,2,4] yield [[],[a,c,c],[d,g]]
 // put in tree alignment
@@ -257,8 +245,8 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vect
 
     // so that we can use dynAlign to calculate cost
     auto tempNode = std::make_shared<TreeNode>(SEQUENCE);
-    tempNode->addChild(children[0]);
     tempNode->addChild(children[1]);
+    tempNode->addChild(children[0]);
 
     std::unordered_map<std::pair<int, int>, int, PairHash> qrCosts;
     for (const auto &edge : edges)
@@ -285,7 +273,7 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vect
             }
 
             int optimalCost = qrCosts[edge];
-            for (size_t j = edge.first + 1; j <= edge.second; j++)
+            for (size_t j = edge.first + 1; j < edge.second; j++)
             {
                 int newCost = qrCosts[{edge.first, j}] + qrCosts[{j, edge.second}];
                 if (newCost < optimalCost)
@@ -311,8 +299,8 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vect
     int minimalCosts = std::numeric_limits<int>::max();
     for (size_t i = 0; i <= n; i++)
     {
-        int costs = rCosts[i] + qrCosts[{i + 1, n}];
-        if (costs < minimalCosts)
+        int costs = rCosts[i] + qrCosts[{i, n}];
+        if (costs < minimalCosts)   
         {
             minimalCosts = costs;
         }
@@ -328,16 +316,16 @@ int dynAlignXorLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::v
     auto &children = node->getChildren();
     auto tempXorNode = std::make_shared<TreeNode>(XOR);
     auto tempRedoLoop = std::make_shared<TreeNode>(REDO_LOOP);
+    auto silentNode = std::make_shared<TreeNode>(SILENT_ACTIVITY);
 
-    tempRedoLoop->addChild(children[0]);
+    tempXorNode->addChild(children[0]);
+    tempXorNode->addChild(children[1]);
+
     tempRedoLoop->addChild(tempXorNode);
+    tempRedoLoop->addChild(silentNode);
 
-    for (int i = 1; i < children.size(); i++)
-    {
-        tempXorNode->addChild(children[i]);
-    }
-
-    return dynAlignLoop(tempRedoLoop, trace);
+    auto x = dynAlignLoop(tempRedoLoop, trace);
+    return x;
 }
 
 int dynAlign(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vector<std::string>> trace)
