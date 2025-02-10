@@ -212,13 +212,77 @@ StringVec generatePtmlNames(const std::string &baseName, const StringVec &fileEn
     return ptmlNames;
 }
 
+// void parseAndAlign(const std::string &xesPath, const std::string &ptmlPath, const std::string &outputFileName)
+// {
+//     StringVec fileNames;
+
+//     try
+//     {
+//         std::cout << std::filesystem::current_path() << "\n";
+//         for (const auto &entry : std::filesystem::directory_iterator(xesPath))
+//         {
+//             if (entry.is_regular_file())
+//             {
+//                 fileNames.push_back(entry.path().stem().string());
+//             }
+//         }
+//     }
+//     catch (const std::filesystem::filesystem_error &e)
+//     {
+//         std::cerr << "Error: " << e.what() << '\n';
+//         return;
+//     }
+
+//     std::ofstream outFile(outputFileName);
+//     if (!outFile)
+//     {
+//         std::cerr << "Error: Could not create the file!" << std::endl;
+//         return;
+//     }
+
+//     nlohmann::json evalJson;
+//     StringVec fileEndings = {"_pt00", "_pt10", "_pt25", "_pt50"};
+
+//     for (const auto &fileName : fileNames)
+//     {
+//         const std::string fileXesPath = xesPath + fileName + ".xes";
+//         auto trace = parseXes(fileXesPath);
+
+//         bool basePtmlExists = std::filesystem::exists(ptmlPath + fileName + ".ptml");
+
+//         StringVec ptmlFiles = basePtmlExists ? StringVec{fileName + ".ptml"}
+//                                              : generatePtmlNames(fileName, fileEndings);
+
+//         for (const auto &ptmlFile : ptmlFiles)
+//         {
+//             const auto ptmlFilePath = ptmlPath + ptmlFile;
+//             if (!std::filesystem::exists(ptmlFilePath))
+//             {
+//                 std::cerr << "File: " << ptmlPath << ptmlFile << " doesn't exist.\n";
+//                 continue;
+//             }
+
+//             auto processTree = parsePtml(ptmlFilePath);
+//             int count = 0;
+//             for (const auto &otherTrace : trace)
+//             {
+//                 auto cost = dynAlign(processTree, std::make_shared<StringVec>(otherTrace));
+//                 evalJson[ptmlFile][std::to_string(count++)]["adv. dyn. c++"] = cost;
+//             }
+//         }
+//     }
+
+//     outFile << evalJson.dump(4);
+// }
+
 void parseAndAlign(const std::string &xesPath, const std::string &ptmlPath, const std::string &outputFileName)
 {
+    using json = nlohmann::json;
     StringVec fileNames;
 
+    // Collect file names
     try
     {
-        std::cout << std::filesystem::current_path() << "\n";
         for (const auto &entry : std::filesystem::directory_iterator(xesPath))
         {
             if (entry.is_regular_file())
@@ -233,14 +297,14 @@ void parseAndAlign(const std::string &xesPath, const std::string &ptmlPath, cons
         return;
     }
 
-    std::ofstream outFile(outputFileName);
+    // Open the output file in append mode
+    std::ofstream outFile(outputFileName, std::ios::app);
     if (!outFile)
     {
-        std::cerr << "Error: Could not create the file!" << std::endl;
+        std::cerr << "Error: Could not create or open the file!" << std::endl;
         return;
     }
 
-    nlohmann::json evalJson;
     StringVec fileEndings = {"_pt00", "_pt10", "_pt25", "_pt50"};
 
     for (const auto &fileName : fileNames)
@@ -255,22 +319,27 @@ void parseAndAlign(const std::string &xesPath, const std::string &ptmlPath, cons
 
         for (const auto &ptmlFile : ptmlFiles)
         {
-            const auto ptmlFilePath = ptmlPath + ptmlFile;
+            const std::string ptmlFilePath = ptmlPath + ptmlFile;
             if (!std::filesystem::exists(ptmlFilePath))
             {
-                std::cerr << "File: " << ptmlPath << ptmlFile << " doesn't exist.\n";
+                std::cerr << "File: " << ptmlFilePath << " doesn't exist.\n";
                 continue;
             }
 
             auto processTree = parsePtml(ptmlFilePath);
             int count = 0;
+
             for (const auto &otherTrace : trace)
             {
                 auto cost = dynAlign(processTree, std::make_shared<StringVec>(otherTrace));
-                evalJson[ptmlFile][std::to_string(count++)]["adv. dyn. c++"] = cost;
+
+                // Create a temporary JSON object for the result
+                json tempJson;
+                tempJson[ptmlFile][std::to_string(count++)]["adv. dyn. c++"] = cost;
+
+                // Write the temporary JSON object to the file
+                outFile << tempJson.dump(4) << std::endl;
             }
         }
     }
-
-    outFile << evalJson.dump(4);
 }
