@@ -106,11 +106,11 @@ def eval_data():
             if (res_1 := data[ptml][trace]["adv. dyn. c++"]) != (res_2 := data[ptml][trace]["approx"]):
                 print(f"Unequal values for ptml file {ptml} for trace {trace} with adv dyn c++ = {res_1} and approx = {res_2}")
 
-load_data()
+# load_data()
 
 os.system("/home/matthias/rwth/ba/process-tree-alignments-cpp/build/process-tree-alignments-cpp")
 
-output_file = Path("output/defaultOutput.json").resolve()
-feed_compare_data(output_file)
+# output_file = Path("output/defaultOutput.json").resolve()
+# feed_compare_data(output_file)
 
-eval_data()
+# eval_data()
