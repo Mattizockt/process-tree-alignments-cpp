@@ -8,134 +8,13 @@
 #include <algorithm>
 #include <iostream>
 
+using StringVec = std::vector<std::string>;
 
-// example: trace [a,c,c,d,g], splits [-1,2,4] yield [[],[a,c,c],[d,g]]
-// put in tree alignment
-std::vector<std::shared_ptr<std::vector<std::string>>> segmentTrace(const std::shared_ptr<std::vector<std::string>> trace, const std::vector<int> &splits)
+int dynAlign(std::shared_ptr<TreeNode> node, const std::shared_ptr<StringVec> trace);
+
+int dynAlignActivity(std::shared_ptr<TreeNode> node, std::shared_ptr<StringVec> trace)
 {
-    std::vector<std::shared_ptr<std::vector<std::string>>> traceSegments;
-    traceSegments.reserve(splits.size());
-
-    int start = 0;
-    const auto &defaultSubtrace = std::make_shared<std::vector<std::string>>(); // Empty segment
-    for (int index : splits)
-    {
-        if (index == -1 || start > index)
-        {
-            traceSegments.emplace_back(defaultSubtrace);
-        }
-        else
-        {
-            // TODO test
-            traceSegments.emplace_back(std::make_shared<std::vector<std::string>>(trace->begin() + start, trace->begin() + index + 1));
-            start = index + 1;
-        }
-    }
-    return traceSegments;
-}
-
-// helper function to compute possible splits
-void calculatePossibleSplits(
-    // perhaps change name childPositions
-    const std::vector<std::vector<int>> &childPositions,
-    std::vector<int> currentSplit,
-    int position,
-    std::vector<std::vector<int>> &possibleSplits,
-    const int lastPosition)
-{
-    // Full segment computed
-    if (position == childPositions.size())
-    {
-        possibleSplits.push_back(currentSplit);
-        return;
-    }
-    // Previous elements of segment are already the last position e.g. [4,4,..] for lastPosition == 4
-    else if (!currentSplit.empty() && currentSplit.back() == lastPosition)
-    {
-        currentSplit.push_back(lastPosition);
-        calculatePossibleSplits(childPositions, currentSplit, position + 1, possibleSplits, lastPosition);
-        return;
-    }
-    // child has no activites that are in this trace
-    // TODO add test case
-    else if (childPositions[position].empty())
-    {
-        currentSplit.push_back(currentSplit.empty() ? -1 : currentSplit.back());
-        calculatePossibleSplits(childPositions, currentSplit, position + 1, possibleSplits, lastPosition);
-        return;
-    }
-    // There are positions for this child, and the segment is not full yet
-    if (!currentSplit.empty() && currentSplit.size() < childPositions.size() - 1 && currentSplit.back() != -1)
-    {
-        currentSplit.push_back(currentSplit.back());
-        calculatePossibleSplits(childPositions, currentSplit, position + 1, possibleSplits, lastPosition);
-        currentSplit.pop_back();
-    }
-
-    for (const auto &element : childPositions[position])
-    {
-        // only look at childPositions that are bigger than the current one. we want [1,5,6] not this [1,5,3]
-        if (!currentSplit.empty() && currentSplit.back() > element)
-        {
-            continue;
-        }
-
-        currentSplit.push_back(element);
-        calculatePossibleSplits(childPositions, currentSplit, position + 1, possibleSplits, lastPosition);
-        currentSplit.pop_back();
-    }
-}
-
-// suggest where splitting the trace would make sense for children, returns splitting point
-// [a,b,v,d,y,u] that is supposed to be split among two children
-// it returns something like this  [0,5] = [[a], [b,v,d,y,u]] or [-1,5] = [[a, b,v,d,y,u]]
-std::vector<std::vector<int>> generateSplits(const std::shared_ptr<TreeNode> &node, const std::shared_ptr<std::vector<std::string>> trace)
-{
-    std::unordered_map<std::string, std::string> activityChildMap;
-    std::unordered_map<std::string, int> nodeIdPostionMap;
-    std::vector<std::vector<int>> childPositions(node->getChildren().size());
-
-    int count = 0;
-    for (const auto &child : node->getChildren())
-    {
-        childPositions[count].push_back(-1);
-        nodeIdPostionMap[child->getId()] = count;
-
-        for (const auto &pair : child->getActivities())
-        {
-            activityChildMap[pair.first] = child->getId();
-        }
-        ++count;
-    }
-
-    for (size_t i = 0; i < trace->size(); ++i)
-    {
-        std::string activity = trace->at(i);
-        std::string childId = activityChildMap[activity];
-
-        // next activity is the same as current activity
-        if (i + 1 < trace->size() && activityChildMap[trace->at(i + 1)] == childId)
-        {
-            continue;
-        }
-
-        int position = nodeIdPostionMap[childId];
-        childPositions[position].push_back(static_cast<int>(i));
-    }
-
-    // we mustn't create a split that doesn't take the whole trace into account
-    childPositions[count - 1] = {static_cast<int>(trace->size() - 1)};
-
-    std::vector<std::vector<int>> splits;
-    calculatePossibleSplits(childPositions, {}, 0, splits, trace->size() - 1);
-
-    return splits;
-}
-
-int dynAlign(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vector<std::string>> trace);
-
-int dynAlignActivity(std::shared_ptr<TreeNode> node, std::shared_ptr<std::vector<std::string>> trace)
-{
+    // std::cout << "activity" << std::endl;
     const std::string &activity = node->getActivity();
 
     if (std::find(trace->begin(), trace->end(), activity) == trace->end())
@@ -148,43 +27,204 @@ int dynAlignActivity(std::shared_ptr<TreeNode> node, std::shared_ptr<std::vector
     }
 }
 
-int dynAlignSilentActivity(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vector<std::string>> trace)
+int dynAlignSilentActivity(std::shared_ptr<TreeNode> node, const std::shared_ptr<StringVec> trace)
 {
+    // std::cout << "silent activity" << std::endl;
     return trace->size();
 }
 
-int dynAlignSequence(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vector<std::string>> trace)
+std::vector<std::pair<int, int>> get_segments_for_sequence(std::shared_ptr<StringVec> trace, std::shared_ptr<TreeNode> node)
 {
+    if (node->getChildren().size() != 2)
+        throw std::runtime_error("get_segments_for_sequence not implemented for more/less than two children.");
+
+    int traceSize = trace->size();
+    std::vector<std::pair<int, int>> segments = {
+        {0, traceSize},
+        {traceSize, 0}};
+
+    std::vector<int> splitPositions;
+    for (int i = 1; i < traceSize; i++)
+    {
+        if (node->getChildren()[1]->getActivities().count(trace->at(i)) &&
+            node->getChildren()[0]->getActivities().count(trace->at(i - 1)))
+        {
+            splitPositions.push_back(i);
+        }
+    }
+
+    for (const auto splitPosition : splitPositions)
+    {
+        segments.push_back({splitPosition, traceSize - splitPosition});
+    }
+
+    return segments;
+}
+
+struct PairCost {
+    std::pair<int, int> first_pair;
+    std::pair<int, int> second_pair;
+    int cost;
+
+    PairCost(std::pair<int, int> fp, std::pair<int, int> sp, int c)
+        : first_pair(fp), second_pair(sp), cost(c) {}
+
+    PairCost() : first_pair({-1, -1}), second_pair({-1, -1}), cost(-1) {}
+};
+
+std::vector<PairCost> outgoingEdges(std::pair<int, int> v, int numChild, int n, std::shared_ptr<StringVec> trace, std::shared_ptr<TreeNode> node, int upperBound)
+{
+    std::vector<PairCost> result;
+    if (v.first == numChild)
+    {
+        return result;
+    }
+    for (int k = v.second; k < n + 1; k++)
+    {
+        if (v.first == numChild - 1 && k < n)
+        {
+            continue;
+        }
+        if (k < n - 1 && node->getChildren().at(v.first)->getActivities().count(trace->at(k)))
+        {
+            continue;
+        }
+        std::shared_ptr<StringVec> subTrace = std::make_shared<StringVec>(trace->begin() + v.second, trace->begin() + k);
+        int tempCost = dynAlign(node->getChildren().at(v.first), subTrace);
+        if (tempCost > upperBound)
+        {
+            continue;
+        }
+        result.push_back(PairCost(std::pair<int, int>(v.first, v.second),std::pair<int, int>(v.first+1, k), tempCost));
+    }
+    return result;
+}
+
+int dynAlignSequence(std::shared_ptr<TreeNode> node, const std::shared_ptr<StringVec> trace)
+{
+    // std::cout << "sequence" << std::endl;
+    const auto &children = node->getChildren();
     if (trace->size() == 0)
     {
-        const auto &children = node->getChildren();
         return std::accumulate(children.begin(), children.end(), 0, [&trace](int sum, const auto &child)
                                { return sum + dynAlign(child, trace); });
     }
 
-    int minCosts = std::numeric_limits<int>::max();
+    int pos = 0;
+    int old_pos = 0;
+    int costs = 0;
 
-    std::vector<std::vector<int>> splits = generateSplits(node, trace);
-
-    for (const auto &split : splits)
+    if (trace->size() > children.size() &&
+        children[0]->getActivities().count(trace->at(0)) &&
+        children.back()->getActivities().count(trace->back()))
     {
-        int costs = 0;
-        const auto &splittedSegments = segmentTrace(trace, split);
-        const auto &children = node->getChildren();
-
-        for (int i = 0; i < splittedSegments.size(); i++)
+        for (const auto &child : children)
         {
-            costs += dynAlign(children[i], splittedSegments[i]);
+            while (pos < trace->size() && child->getActivities().count(trace->at(pos)))
+            {
+                pos += 1;
+            }
+            std::shared_ptr<StringVec> subTrace = std::make_shared<StringVec>(trace->begin() + old_pos, trace->begin() + pos);
+            costs += dynAlign(child, subTrace);
+            old_pos = pos;
         }
-
-        minCosts = std::min(minCosts, costs);
     }
 
-    return minCosts;
+    if (pos < trace->size())
+    {
+        costs = std::numeric_limits<int>::max();
+    }
+
+    if (costs == 0)
+    {
+        return 0;
+    }
+
+    if (children.size() == 2)
+    {
+        auto segments = get_segments_for_sequence(trace, node);
+        // std::cout << "other size: " << std::to_string(segments.size()) << std::endl;
+        for (const auto segment : segments)
+        {
+            int split = segment.first;
+            std::shared_ptr<StringVec> first_part = std::make_shared<StringVec>(trace->begin(), trace->begin() + split);
+            std::shared_ptr<StringVec> second_part = std::make_shared<StringVec>(trace->begin() + split, trace->end());
+
+            auto leftCost = dynAlign(children[0], first_part);
+            if (leftCost >= costs)
+            {
+                continue;
+            }
+            auto rightCost = dynAlign(children[1], second_part);
+
+            costs = std::min(leftCost + rightCost, costs);
+        }
+        return costs;
+    }
+
+    std::vector<std::pair<int, int>> vertices;
+
+    int numChildren = node->getChildren().size();
+    int n = trace->size();
+    for (int i = 0; i <= numChildren; ++i)
+    {
+        for (int j = 0; j <= n; ++j)
+        {
+            if ((i > 0 && i < numChildren) || (i == 0 && j == 0) || (i == numChildren && j == n))
+            {
+                vertices.push_back(std::make_pair(i, j));
+            }
+        }
+    }
+
+    std::pair<int, int> start(0, 0);    
+    std::pair<int, int> end(numChildren, n);
+
+    std::unordered_map<std::pair<int, int>, int, PairHash> dijkstraCosts;
+
+    for (const auto vertex : vertices)
+    {
+        dijkstraCosts[vertex] = std::numeric_limits<int>::max();
+    }
+    dijkstraCosts[start] = 0;
+    std::unordered_map<std::pair<int, int>, bool, PairHash> visited;
+
+    while (visited.size() < vertices.size())
+    {
+        std::pair<int, int> current;
+        int min_cost = std::numeric_limits<int>::max();
+
+        for (const auto &v : vertices)
+        {
+            // this implementation could cause problems later on, rewrite later TODO
+            if (visited.find(v) == visited.end() && dijkstraCosts[v] <= min_cost)
+            {
+                min_cost = dijkstraCosts[v];
+                current = v;
+            }
+        }
+        visited[current] = true;
+        if (dijkstraCosts[current] > costs)
+        {
+            continue;
+        }
+        // TODO find other way for constantly using std:;numeric_limiits
+        for (auto edge : outgoingEdges(current, numChildren, n, trace, node, costs)) {
+            if (dijkstraCosts[current] != std::numeric_limits<int>::max()) {
+                dijkstraCosts[edge.second_pair] = std::min(dijkstraCosts[edge.second_pair], dijkstraCosts[current] + edge.cost);
+            }
+            else {
+                dijkstraCosts[edge.second_pair] = dijkstraCosts[edge.second_pair];
+            }
+        }
+    }
+
+    return std::min(costs, dijkstraCosts[end]);
 }
 
-int dynAlignXor(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vector<std::string>> trace)
+int dynAlignXor(std::shared_ptr<TreeNode> node, const std::shared_ptr<StringVec> trace)
 {
+    // std::cout << "xor" << std::endl;
     int minCost = std::numeric_limits<int>::max();
     for (const auto &child : node->getChildren())
     {
@@ -198,12 +238,13 @@ int dynAlignXor(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vecto
     return minCost;
 }
 
-int dynAlignParallel(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vector<std::string>> trace)
+int dynAlignParallel(std::shared_ptr<TreeNode> node, const std::shared_ptr<StringVec> trace)
 {
+    // std::cout << "parallel" << std::endl;
     const auto &children = node->getChildren();
-    std::vector<std::shared_ptr<std::vector<std::string>>> subTraces(children.size());
+    std::vector<std::shared_ptr<StringVec>> subTraces(children.size());
     std::generate(subTraces.begin(), subTraces.end(), []
-                  { return std::make_shared<std::vector<std::string>>(); });
+                  { return std::make_shared<StringVec>(); });
 
     int unmatched = std::count_if(trace->begin(), trace->end(), [&](const std::string &activity)
                                   {
@@ -224,8 +265,10 @@ int dynAlignParallel(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::
     return cost + unmatched;
 }
 
-int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vector<std::string>> trace)
+int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<StringVec> trace)
 {
+    // std::cout << "loop" << std::endl;
+
     auto &children = node->getChildren();
 
     if (children.size() != 2)
@@ -257,7 +300,7 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vect
             continue;
         }
         // TODO use arrays later to make this operation more efficient
-        auto subTrace = std::make_shared<std::vector<std::string>>(trace->begin() + edge.first, trace->begin() + edge.second);
+        auto subTrace = std::make_shared<StringVec>(trace->begin() + edge.first, trace->begin() + edge.second);
         int cost = dynAlign(tempNode, subTrace);
         qrCosts[edge] = cost;
     }
@@ -293,14 +336,14 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vect
     std::unordered_map<int, int> rCosts(n);
     for (size_t i = 0; i <= n; i++)
     {
-        rCosts[i] = dynAlign(children[0], std::make_shared<std::vector<std::string>>(trace->begin(), trace->begin() + i));
+        rCosts[i] = dynAlign(children[0], std::make_shared<StringVec>(trace->begin(), trace->begin() + i));
     }
 
     int minimalCosts = std::numeric_limits<int>::max();
     for (size_t i = 0; i <= n; i++)
     {
         int costs = rCosts[i] + qrCosts[{i, n}];
-        if (costs < minimalCosts)   
+        if (costs < minimalCosts)
         {
             minimalCosts = costs;
         }
@@ -311,8 +354,9 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vect
 
 // TODO perhaps implement refactor tree function in the future to remove xor loops
 // because child creation is expensive
-int dynAlignXorLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vector<std::string>> trace)
+int dynAlignXorLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<StringVec> trace)
 {
+    // std::cout << "xor loop" << std::endl;
     auto &children = node->getChildren();
     auto tempXorNode = std::make_shared<TreeNode>(XOR);
     auto tempRedoLoop = std::make_shared<TreeNode>(REDO_LOOP);
@@ -328,13 +372,18 @@ int dynAlignXorLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::v
     return x;
 }
 
-int dynAlign(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vector<std::string>> trace)
+int dynAlign(std::shared_ptr<TreeNode> node, const std::shared_ptr<StringVec> trace)
 {
     if (costTable.count(node->getId()) > 0)
     {
-        if (costTable[node->getId()].count(trace) == 1)
+        if (costTable[node->getId()].count(*trace) == 1)
         {
-            return costTable[node->getId()][trace];
+            // std::cout << "costtable" << std::endl;
+            return costTable[node->getId()][*trace];
+        }
+        else
+        {
+            // std::cout << "not found" << std::endl;
         }
     }
 
@@ -366,6 +415,6 @@ int dynAlign(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vector<s
         throw std::runtime_error("Unknown node operation: " + std::to_string(node->getOperation()));
     }
 
-    costTable[node->getId()][trace] = costs;
+    costTable[node->getId()][*trace] = costs;
     return costs;
 }
