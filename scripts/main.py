@@ -71,22 +71,23 @@ def feed_compare_data(output_file : Path):
 
         for ptml_file in ptml_files:
             process_tree = pm4py.read_ptml(str(ptml_path / ptml_file))
-            accepting_petri_net = process_tree_to_petri_net(process_tree)
+            # accepting_petri_net = process_tree_to_petri_net(process_tree)
 
             for i in range(len(trace_variants)):
+                print(i)
                 # Ensure dictionary structure exists
                 costs.setdefault(ptml_file, {}).setdefault(str(i), {}).setdefault(
                     "adv. dyn. c++", None
                 ) 
-                costs[ptml_file][str(i)].setdefault("a* petri", None)
+                # costs[ptml_file][str(i)].setdefault("a* petri", None)
                 costs[ptml_file][str(i)].setdefault("approx", None)
 
-                # Add only if not already present
-                if costs[ptml_file][str(i)]["a* petri"] is None:
-                    petri_res = pm4py_align_petri_net(
-                        trace_variants[i][1], *accepting_petri_net
-                    )
-                    costs[ptml_file][str(i)]["a* petri"] = petri_res["cost"]
+                # # Add only if not already present
+                # if costs[ptml_file][str(i)]["a* petri"] is None:
+                #     petri_res = pm4py_align_petri_net(
+                #         trace_variants[i][1], *accepting_petri_net
+                #     )
+                #     costs[ptml_file][str(i)]["a* petri"] = petri_res["cost"]
 
                 if costs[ptml_file][str(i)]["approx"] is None:
                     approx_res = pm4py_align_process_tree(
@@ -106,9 +107,21 @@ def eval_data():
             if (res_1 := data[ptml][trace]["adv. dyn. c++"]) != (res_2 := data[ptml][trace]["approx"]):
                 print(f"Unequal values for ptml file {ptml} for trace {trace} with adv dyn c++ = {res_1} and approx = {res_2}")
 
+
+def visualizeTree():
+    from pm4py.visualization.process_tree import visualizer as pt_visualizer
+    # print(Path("./"))
+    path = Path("./data/ptml/BPI_Challenge_2019_pt00.ptml").resolve()
+    print(path)
+    process_tree = pm4py.read_ptml(str(path))
+    gviz = pt_visualizer.apply(process_tree)
+    pt_visualizer.view(gviz)
+
+# visualizeTree()
+feed_compare_data("output.txt")
 # load_data()
 
-os.system("/home/matthias/rwth/ba/process-tree-alignments-cpp/build/process-tree-alignments-cpp")
+# os.system("/home/matthias/rwth/ba/process-tree-alignments-cpp/build/process-tree-alignments-cpp")
 
 # output_file = Path("output/defaultOutput.json").resolve()
 # feed_compare_data(output_file)

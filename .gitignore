@@ -5,3 +5,4 @@ data/xes
 myenv   
 output/
 scripts/__pycache__
+scripts/test.py

@@ -6,9 +6,19 @@
 #include <vector>
 #include <memory>
 
+struct VectorHash {
+    std::size_t operator()(const std::vector<std::string>& vec) const {
+        std::size_t seed = vec.size();
+        for (const auto& str : vec) {
+            seed ^= std::hash<std::string>{}(str) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        }
+        return seed;
+    }
+};
+
 // node id -> (trace -> alignmentcost)
 // later change it to an array for more efficiency
-extern std::unordered_map<std::string, std::unordered_map<std::shared_ptr<std::vector<std::string>>, int>> costTable;
+extern std::unordered_map<std::string, std::unordered_map<std::vector<std::string>, int, VectorHash>> costTable;
 
 enum Operation
 {

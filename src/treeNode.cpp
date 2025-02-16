@@ -5,7 +5,9 @@
 #include "utils.h"
 
 int TreeNode::numberOfNodes = 0;
-std::unordered_map<std::string, std::unordered_map<std::shared_ptr<std::vector<std::string>>, int>> costTable;
+
+// verify hash function
+std::unordered_map<std::string, std::unordered_map<std::vector<std::string>, int, VectorHash>> costTable;
 
 TreeNode::TreeNode()
     : activities(), children(), activity(), operation(), id(std::to_string(++numberOfNodes))
