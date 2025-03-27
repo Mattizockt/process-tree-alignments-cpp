@@ -5,6 +5,18 @@
 #include "treeAlignment.h"
 #include <limits>
 
+/**
+* Enhanced optimization implementation - experimental
+* 
+* This class contains custom optimizations and performance improvements that
+* address core efficiency bottlenecks in the original implementation.
+* 
+* NOTE: This implementation remains experimental and has not undergone
+* verification testing. Due to pending validation of its
+* correctness and stability, it has not yet been integrated into the
+* production codebase.
+*/
+
 // example: trace [a,c,c,d,g], splits [-1,2,4] yield [[],[a,c,c],[d,g]]
 // put in tree alignment
 std::vector<std::shared_ptr<std::vector<std::string>>> segmentTrace(const std::shared_ptr<std::vector<std::string>> trace, const std::vector<int> &splits)

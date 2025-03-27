@@ -5,22 +5,21 @@
 #include <unordered_map>
 #include <vector>
 
-// Prune the input trace based on node activities
-// TODO verify if correct
-std::shared_ptr<std::vector<std::string>> pruneInputTrace(const std::shared_ptr<TreeNode> &node, const std::shared_ptr<std::vector<std::string>> trace)
+/* inactive */
+std::shared_ptr<std::vector<int>> pruneInputTrace(const std::shared_ptr<TreeNode> &node, const std::shared_ptr<std::vector<int>> trace)
 {
-    std::unordered_set<std::string> nodeLetters;
+    std::unordered_set<int> nodeLetters;
     for (const auto &pair : node->getActivities())
     {
         nodeLetters.insert(pair.first);
     }
 
-    std::shared_ptr<std::vector<std::string>> prunedTrace;
-    for (const auto &str : *trace)
+    std::shared_ptr<std::vector<int>> prunedTrace;
+    for (const auto &var : *trace)
     {
-        if (nodeLetters.count(str))
+        if (nodeLetters.count(var))
         {
-            prunedTrace->push_back(str);
+            prunedTrace->push_back(var);
         }
     }
 
@@ -49,7 +48,6 @@ void printNestedVector(const std::vector<std::vector<int>> &vec)
     }
 }
 
-// Function to print a nested vector of strings
 void printNestedVector(const std::vector<std::shared_ptr<std::vector<std::string>>> &nestedVec) {
     std::cout << "[\n";
     for (const auto vecPtr : nestedVec) {
