@@ -6,8 +6,7 @@
 
 int TreeNode::numberOfNodes = 0;
 
-// verify hash function
-std::unordered_map<std::string, std::unordered_map<std::vector<std::string>, int, VectorHash>> costTable;
+std::unordered_map<std::string, std::unordered_map<std::vector<int>, int, VectorHash>> costTable;
 
 TreeNode::TreeNode()
     : activities(), children(), activity(), operation(), id(std::to_string(++numberOfNodes))
@@ -19,7 +18,7 @@ TreeNode::TreeNode(Operation operation)
 {
 }
 
-TreeNode::TreeNode(Operation operation, std::string activity)
+TreeNode::TreeNode(Operation operation, int activity)
     : activities(), children(), activity(activity), operation(operation), id(std::to_string(++numberOfNodes))
 {
     if (operation == ACTIVITY)
@@ -28,7 +27,7 @@ TreeNode::TreeNode(Operation operation, std::string activity)
     }
 }
 
-TreeNode::TreeNode(Operation operation, std::string activity, std::string id)
+TreeNode::TreeNode(Operation operation, int activity, std::string id)
     : activities(), children(), activity(activity), operation(operation), id(id)
 {
     if (operation == ACTIVITY)
@@ -62,7 +61,7 @@ void TreeNode::setOperation(Operation newOperation)
     operation = newOperation;
 }
 
-std::string TreeNode::getActivity() const
+int TreeNode::getActivity() const
 {
     return activity;
 }
@@ -72,7 +71,8 @@ void TreeNode::addChild(std::shared_ptr<TreeNode> child)
     children.push_back(child);
 }
 
-std::unordered_map<std::string, bool> &TreeNode::getActivities()
+// all activities of this node and its successor
+std::unordered_map<int, bool> &TreeNode::getActivities()
 {
     return activities;
 }
