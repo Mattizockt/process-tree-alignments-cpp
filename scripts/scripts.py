@@ -133,11 +133,11 @@ def feed_compare_data(output_file: Path):
         json.dump(costs, file, indent=4, ensure_ascii=False)
 
 # Function to render a process tree from PTML file as a visual diagram
-def visualizeTree():
+def  visualizeTree(path="./data/ptml/BPI_Challenge_2019_pt00.ptml"):
    from pm4py.visualization.process_tree import visualizer as pt_visualizer
    
    # Define path to specific PTML file (BPI Challenge 2019 with 0% noise threshold)
-   path = Path("./data/ptml/BPI_Challenge_2019_pt00.ptml").resolve()
+   path = Path(path).resolve()
    print(path)  # Display the full resolved path for verification
    
    # Parse the PTML file into a process tree object
@@ -149,4 +149,5 @@ def visualizeTree():
    # Open the visualization in the default viewer application
    pt_visualizer.view(gviz)
 
-feed_compare_data("output.txt")
+visualizeTree("./data/ptml/Road_Traffic_Fine_Management_Process_pt10.ptml")
+# feed_compare_data("output.txt")

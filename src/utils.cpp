@@ -5,6 +5,10 @@
 #include <unordered_map>
 #include <vector>
 #include <ctime>
+#include <sstream>
+#include "parser.h"
+
+using IntVec = std::vector<int>;
 
 // returns unix timestamp as string
 std::string timeInMs()
@@ -15,24 +19,67 @@ std::string timeInMs()
 }
 
 /* inactive */
-std::shared_ptr<std::vector<int>> pruneInputTrace(const std::shared_ptr<TreeNode> &node, const std::shared_ptr<std::vector<int>> trace)
+
+std::shared_ptr<IntVec> pruneTrace(const std::vector<std::shared_ptr<TreeNode>> &nodes, const std::shared_ptr<IntVec> unprunedTrace)
 {
     std::unordered_set<int> nodeLetters;
-    for (const auto &pair : node->getActivities())
+    for (const auto &node : nodes)
     {
-        nodeLetters.insert(pair.first);
-    }
-
-    std::shared_ptr<std::vector<int>> prunedTrace;
-    for (const auto &var : *trace)
-    {
-        if (nodeLetters.count(var))
+        for (const auto &pair : node->getActivities())
         {
-            prunedTrace->push_back(var);
+            nodeLetters.insert(pair.first);
         }
     }
 
+    std::shared_ptr<IntVec> prunedTrace = std::make_shared<IntVec>();
+    for (const auto &activity : *unprunedTrace)
+    {
+        if (nodeLetters.count(activity))
+        {
+            prunedTrace->push_back(activity);
+        }
+    }
     return prunedTrace;
+}
+
+// std::string printDijsktraCosts(const std::unordered_map<std::pair<int, int>, int, PairHash> &dijkstraCosts)
+// {
+//     std::stringstream ss;
+//     std::cout << std::endl;
+//     ss << "{";
+
+//     bool first = true;
+//     for (const auto &entry : dijkstraCosts)
+//     {
+//         if (!first)
+//         {
+//             ss << ", ";
+//         }
+//         first = false;
+
+//         ss << "(" << entry.first.first << ", " << entry.first.second << ")";
+//         ss << ": " << entry.second;
+//     }
+
+//     ss << "}";
+//     return ss.str();
+// }
+
+std::string intVecToString(const std::vector<int> &vec)
+{
+    std::string result = "\"(";
+    for (size_t i = 0; i < vec.size(); ++i)
+    {
+        result += "'";
+        result += activityVector[vec[i]];
+        result += "'";
+        if (i < vec.size() - 1)
+        {
+            result += ", ";
+        }
+    }
+    result += ")\"";
+    return result;
 }
 
 void printVector(const std::vector<std::string> &vec)

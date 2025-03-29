@@ -37,7 +37,7 @@ int dynAlignSilentActivity(std::shared_ptr<TreeNode> node, const std::shared_ptr
 }
 
 // Helper function to get segments - analogous to get_segments_for_sequence in Python
-std::vector<std::pair<int, int>> get_segments_for_sequence(std::shared_ptr<IntVec> trace, std::shared_ptr<TreeNode> node)
+std::vector<std::pair<int, int>> getSegmentsForSequence(std::shared_ptr<IntVec> trace, std::shared_ptr<TreeNode> node)
 {
     if (node->getChildren().size() != 2)
     {
@@ -156,14 +156,19 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVe
     // special case for binary sequence operator (common case optimization)
     if (children.size() == 2)
     {
-        auto segments = get_segments_for_sequence(trace, node);
+        // remove elements that are not in the subtree
+        // TODO this way the trace always has to be recomputed? maybe there could be a more efficient solution
+        std::shared_ptr<IntVec> prunedTrace = pruneTrace(children, trace);
+        int aliens = trace->size() - prunedTrace->size();
+
+        auto segments = getSegmentsForSequence(prunedTrace, node);
         for (const auto segment : segments)
         {
             int split = segment.first;
-            std::shared_ptr<IntVec> first_part = std::make_shared<IntVec>(trace->begin(), trace->begin() + split);
-            std::shared_ptr<IntVec> second_part = std::make_shared<IntVec>(trace->begin() + split, trace->end());
+            std::shared_ptr<IntVec> first_part = std::make_shared<IntVec>(prunedTrace->begin(), prunedTrace->begin() + split);
+            std::shared_ptr<IntVec> second_part = std::make_shared<IntVec>(prunedTrace->begin() + split, prunedTrace->end());
 
-            auto leftCost = dynAlign(children[0], first_part);
+            auto leftCost = dynAlign(children[0], first_part) + aliens;
             if (leftCost >= costs)
             {
                 continue;
@@ -283,7 +288,7 @@ int dynAlignParallel(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVe
 }
 
 // Implements _dyn_align_loop from Python using C++ constructs
-// for traces of form R(QR)* 
+// for traces of form R(QR)*
 int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVec> trace)
 {
     auto &children = node->getChildren();
@@ -377,22 +382,18 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVec> t
 }
 
 // some event logs use a XorLoop instead of a RedoLoop
-// this is only a make-do version  
 int dynAlignXorLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVec> trace)
 {
+    // TODO temporary solution that fits data set redo(child[0], child[1])
+    // this representation should be correct:     // sequence(child[0], redo(child[2], sequence(child[1], child[0])))
     auto &children = node->getChildren();
-    auto tempXorNode = std::make_shared<TreeNode>(XOR);
+
     auto tempRedoLoop = std::make_shared<TreeNode>(REDO_LOOP);
-    auto silentNode = std::make_shared<TreeNode>(SILENT_ACTIVITY);
+    tempRedoLoop->addChild(children[0]);
+    tempRedoLoop->addChild(children[1]);
 
-    tempXorNode->addChild(children[0]);
-    tempXorNode->addChild(children[1]);
-
-    tempRedoLoop->addChild(tempXorNode);
-    tempRedoLoop->addChild(silentNode);
-
-    auto x = dynAlignLoop(tempRedoLoop, trace);
-    return x;
+    int cost = dynAlignLoop(tempRedoLoop, trace);
+    return cost;
 }
 
 int dynAlign(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVec> trace)
