@@ -43,7 +43,7 @@ int TreeNode::getNumberOfNodes()
 
 std::string TreeNode::getId() const
 {
-        return id;
+    return id;
 }
 
 void TreeNode::setId(std::string newId)

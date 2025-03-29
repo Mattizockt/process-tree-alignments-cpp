@@ -10,22 +10,35 @@
 #include <vector>
 #include <unordered_map>
 #include <filesystem>
-#include <pthread.h>
-#include <thread>
-#include <future>
+#include <chrono>
 
 // Type aliases for commonly used data structures
 using StringVec = std::vector<std::string>;
 using IntVec = std::vector<int>;
 
 // Global variables for activity handling
-std::unordered_map<std::string, int> activitiesToInt;  // Maps activity names to integer IDs
-std::vector<std::string> activityVector;               // Reverse mapping: integer IDs back to activity names
-std::atomic<bool> stopFlag(false);                     // Flag for terminating parallel operations
+std::unordered_map<std::string, int> activitiesToInt; // Maps activity names to integer IDs
+std::vector<std::string> activityVector;              // Reverse mapping: integer IDs back to activity names
+std::atomic<bool> stopFlag(false);                    // Flag for terminating parallel operations
+
+std::string vectorToString(const std::vector<int> &vec)
+{
+    std::string result = "(";
+    for (size_t i = 0; i < vec.size(); ++i)
+    {
+        result += activityVector[vec[i]];
+        if (i < vec.size() - 1)
+        {
+            result += ", ";
+        }
+    }
+    result += ")";
+    return result;
+}
 
 /**
  * Extracts activity sequence from a single trace XML node
- * 
+ *
  * @param traceNode Pointer to an XML trace node containing event data
  * @return Vector of integer activity IDs representing the trace sequence
  */
@@ -80,7 +93,7 @@ IntVec extractActivitiesFromTrace(rapidxml::xml_node<> *traceNode)
 
 /**
  * Parses an XES file and extracts all traces as sequences of activity IDs
- * 
+ *
  * @param filePath Path to the XES file
  * @return Vector of traces, where each trace is a vector of activity IDs
  */
@@ -141,7 +154,7 @@ std::vector<IntVec> parseXes(const std::string &filePath)
 
 /**
  * Creates a tree node from an XML node
- * 
+ *
  * @param nodeName Type of the node (sequence, and, xor, etc.)
  * @param sibling XML node containing node attributes
  * @return Shared pointer to the created TreeNode
@@ -156,8 +169,7 @@ std::shared_ptr<TreeNode> createNode(const std::string &nodeName, rapidxml::xml_
 
     // Map node type names to corresponding operation enums
     static const std::unordered_map<std::string, Operation> nodeTypeMap = {
-        {"sequence", SEQUENCE}, {"and", PARALLEL}, {"xor", XOR}, {"xorLoop", XOR_LOOP}, 
-        {"manualTask", ACTIVITY}, {"automaticTask", SILENT_ACTIVITY}, {"redoLoop", REDO_LOOP}};
+        {"sequence", SEQUENCE}, {"and", PARALLEL}, {"xor", XOR}, {"xorLoop", XOR_LOOP}, {"manualTask", ACTIVITY}, {"automaticTask", SILENT_ACTIVITY}, {"redoLoop", REDO_LOOP}};
 
     // Check if the node type is supported
     auto it = nodeTypeMap.find(nodeName);
@@ -188,7 +200,7 @@ std::shared_ptr<TreeNode> createNode(const std::string &nodeName, rapidxml::xml_
 
 /**
  * Parses a PTML file and constructs the process tree
- * 
+ *
  * @param filePath Path to the PTML file
  * @return Shared pointer to the root node of the process tree
  */
@@ -277,7 +289,7 @@ std::shared_ptr<TreeNode> parsePtml(const std::string &filePath)
 
 /**
  * Generates PTML file names with different suffixes
- * 
+ *
  * @param baseName Base name for the PTML file
  * @param fileEndings Vector of suffixes to append
  * @return Vector of complete PTML file names
@@ -294,7 +306,7 @@ StringVec generatePtmlNames(const std::string &baseName, const StringVec &fileEn
 
 /**
  * Main processing function: parses XES and PTML files and computes alignments
- * 
+ *
  * @param xesPath Directory containing XES files
  * @param ptmlPath Directory containing PTML files
  * @param outputFileName Path to the output JSON file
@@ -321,14 +333,6 @@ void parseAndAlign(const std::string &xesPath, const std::string &ptmlPath, cons
         return;
     }
 
-    // Open output file in append mode
-    std::ofstream outFile(outputFileName, std::ios::app);
-    if (!outFile)
-    {
-        std::cerr << "Error: Could not create or open the file!" << std::endl;
-        return;
-    }
-
     // Define standard file suffixes for PTML variants
     StringVec fileEndings = {"_pt00", "_pt10", "_pt25", "_pt50"};
 
@@ -345,6 +349,7 @@ void parseAndAlign(const std::string &xesPath, const std::string &ptmlPath, cons
                                              : generatePtmlNames(fileName, fileEndings);
 
         // Process each PTML file
+        std::filesystem::path baseDir = std::filesystem::path(PROJECT_OUTPUT_DIR) / timeInMs();
         for (const auto &ptmlFile : ptmlFiles)
         {
             const std::string ptmlFilePath = ptmlPath + ptmlFile;
@@ -353,24 +358,57 @@ void parseAndAlign(const std::string &xesPath, const std::string &ptmlPath, cons
                 std::cerr << "File: " << ptmlFilePath << " doesn't exist.\n";
                 continue;
             }
-
             // Parse PTML file to get process tree
             auto processTree = parsePtml(ptmlFilePath);
-            int count = 0;
 
+            // create directory for output
+            std::filesystem::path directory = baseDir / ptmlFile;
+            std::filesystem::create_directories(directory);
+            
+            // Open output file in append mode
+            std::filesystem::path costOutputFilePath = directory / "costs.csv";
+            std::ofstream costFile(costOutputFilePath, std::ios::app);
+            if (!costFile)
+            {
+                std::cerr << "Error: Could not create or open the file!" << std::endl;
+                return;
+            }
+
+            std::filesystem::path timesOutputFilePath = directory / "times.csv";
+            std::ofstream timeFile(timesOutputFilePath, std::ios::app);
+            if (!timeFile)
+            {
+                std::cerr << "Error: Could not create or open the file!" << std::endl;
+                return;
+            }
+
+            int count = 0;
             // Compute alignment cost for each trace
             for (const auto &otherTrace : traces)
             {
                 costTable.clear(); // Clear cost table for new alignment
+
+                auto executionStart = std::chrono::high_resolution_clock::now();
                 auto cost = dynAlign(processTree, std::make_shared<IntVec>(otherTrace));
+                auto executionEnd = std::chrono::high_resolution_clock::now();
 
-                // Create JSON object with alignment result
-                json tempJson;
-                tempJson[ptmlFile][std::to_string(count++)]["adv. dyn. c++"] = cost;
+                // in miliseconds
+                auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(executionEnd - executionStart).count();
 
-                // Write result to output file
-                outFile << tempJson.dump(4) << std::endl;
+                timeFile << ptmlFile << ", ";
+                timeFile << count << ", ";
+                timeFile << duration << ", ";
+                timeFile << vectorToString(otherTrace) << ", ";
+                timeFile << std::endl;
+
+                costFile << ptmlFile << ", ";
+                costFile << count << ", ";
+                costFile << cost << ", ";
+                costFile << vectorToString(otherTrace) << ", ";
+                costFile << std::endl;
+
+                count++;
             }
         }
     }
-}   
+}

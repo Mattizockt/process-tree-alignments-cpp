@@ -4,6 +4,15 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <vector>
+#include <ctime>
+
+// returns unix timestamp as string
+std::string timeInMs()
+{
+    std::time_t currentTime = std::time(nullptr);
+    std::string timeString = std::to_string(currentTime);
+    return timeString;
+}
 
 /* inactive */
 std::shared_ptr<std::vector<int>> pruneInputTrace(const std::shared_ptr<TreeNode> &node, const std::shared_ptr<std::vector<int>> trace)
@@ -48,16 +57,20 @@ void printNestedVector(const std::vector<std::vector<int>> &vec)
     }
 }
 
-void printNestedVector(const std::vector<std::shared_ptr<std::vector<std::string>>> &nestedVec) {
+void printNestedVector(const std::vector<std::shared_ptr<std::vector<std::string>>> &nestedVec)
+{
     std::cout << "[\n";
-    for (const auto vecPtr : nestedVec) {
-        if (!vecPtr) {
+    for (const auto vecPtr : nestedVec)
+    {
+        if (!vecPtr)
+        {
             std::cout << "  null\n";
             continue;
         }
-        
+
         std::cout << "  [ ";
-        for (const auto &str : *vecPtr) {
+        for (const auto &str : *vecPtr)
+        {
             std::cout << "\"" << str << "\" ";
         }
         std::cout << "]\n";
