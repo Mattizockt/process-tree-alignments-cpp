@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <memory>
 #include "utils.h"
+#include "parser.h"
 
 int TreeNode::numberOfNodes = 0;
 
@@ -102,7 +103,9 @@ void TreeNode::fillActivityMaps()
 
 void TreeNode::printTree(int level)
 {
-    std::cout << std::string(level * 2, ' ') << "Node ID: " << this->getId() << ", Operation: " << this->getOperation() << ", Activity (if exists): " << this->activity << std::endl;
+    std::string activityName = this->activity != -1? activityVector[this->activity] : "None";
+
+    std::cout << std::string(level * 2, ' ') << "Node ID: " << this->getId() << ", Operation: " << this->getOperation() << ", Activity (if exists): " << activityName << std::endl;
     for (auto &child : this->getChildren())
     {
         child->printTree(level + 1);

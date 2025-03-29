@@ -11,6 +11,8 @@
 #include <unordered_map>
 #include <filesystem>
 #include <chrono>
+#include <algorithm>
+#include <random>
 
 // Type aliases for commonly used data structures
 using StringVec = std::vector<std::string>;
@@ -19,21 +21,30 @@ using IntVec = std::vector<int>;
 // Global variables for activity handling
 std::unordered_map<std::string, int> activitiesToInt; // Maps activity names to integer IDs
 std::vector<std::string> activityVector;              // Reverse mapping: integer IDs back to activity names
-std::atomic<bool> stopFlag(false);                    // Flag for terminating parallel operations
 
-std::string vectorToString(const std::vector<int> &vec)
+// Similiar to the get_variants method from the python implementation
+// removes duplicate traces
+std::vector<IntVec> getVariants(const std::vector<IntVec> traces)
 {
-    std::string result = "(";
-    for (size_t i = 0; i < vec.size(); ++i)
+    std::unordered_map<std::vector<int>, bool, VectorHash> variantsMap;
+
+    for (const IntVec &trace : traces)
     {
-        result += activityVector[vec[i]];
-        if (i < vec.size() - 1)
-        {
-            result += ", ";
-        }
+        variantsMap.emplace(trace, true);
     }
-    result += ")";
-    return result;
+
+    std::vector<IntVec> variants;
+    variants.reserve(variantsMap.size());
+    for (const auto &pair : variantsMap)
+    {
+        variants.push_back(pair.first);
+    }
+
+    // seed can be made random later, right now fixed.
+    std::mt19937 g(12345);
+    std::shuffle(variants.begin(), variants.end(), g);
+
+    return variants;
 }
 
 /**
@@ -147,9 +158,14 @@ std::vector<IntVec> parseXes(const std::string &filePath)
     // Convert map to vector of traces (order preserved)
     std::vector<IntVec> values;
     for (const auto &pair : traceMap)
+    {
         values.push_back(pair.second);
+    }
 
-    return values;
+    // get variants
+    auto variants = getVariants(values);
+
+    return variants;
 }
 
 /**
@@ -284,6 +300,7 @@ std::shared_ptr<TreeNode> parsePtml(const std::string &filePath)
 
     // Initialize activity maps for the tree
     idToNode[rootId]->fillActivityMaps();
+
     return idToNode[rootId]; // Return the root node
 }
 
@@ -364,7 +381,7 @@ void parseAndAlign(const std::string &xesPath, const std::string &ptmlPath, cons
             // create directory for output
             std::filesystem::path directory = baseDir / ptmlFile;
             std::filesystem::create_directories(directory);
-            
+
             // Open output file in append mode
             std::filesystem::path costOutputFilePath = directory / "costs.csv";
             std::ofstream costFile(costOutputFilePath, std::ios::app);
@@ -396,15 +413,13 @@ void parseAndAlign(const std::string &xesPath, const std::string &ptmlPath, cons
                 auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(executionEnd - executionStart).count();
 
                 timeFile << ptmlFile << ", ";
-                timeFile << count << ", ";
                 timeFile << duration << ", ";
-                timeFile << vectorToString(otherTrace) << ", ";
+                timeFile << intVecToString(otherTrace) << ", ";
                 timeFile << std::endl;
 
                 costFile << ptmlFile << ", ";
-                costFile << count << ", ";
                 costFile << cost << ", ";
-                costFile << vectorToString(otherTrace) << ", ";
+                costFile << intVecToString(otherTrace) << ", ";
                 costFile << std::endl;
 
                 count++;

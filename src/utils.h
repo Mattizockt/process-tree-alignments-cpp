@@ -14,7 +14,9 @@ struct PairHash
 };
 
 std::string timeInMs();
-std::string pruneInputTrace(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vector<std::string>>);
+// std::string printDijsktraCosts(const std::unordered_map<std::pair<int, int>, int, PairHash> &dijkstraCosts);
+std::string intVecToString(const std::vector<int> &vec);
+std::shared_ptr<std::vector<int>> pruneTrace(const std::vector<std::shared_ptr<TreeNode>> &nodes, const std::shared_ptr<std::vector<int>> unprunedTrace);
 void printVector(const std::vector<std::string> &vec);
 void printNestedVector(const std::vector<std::vector<int>> &vec);
 void printNestedVector(const std::vector<std::shared_ptr<std::vector<std::string>>> &nestedVec);
