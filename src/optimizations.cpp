@@ -6,16 +6,16 @@
 #include <limits>
 
 /**
-* Enhanced optimization implementation - experimental
-* 
-* This class contains custom optimizations and performance improvements that
-* address core efficiency bottlenecks in the original implementation.
-* 
-* NOTE: This implementation remains experimental and has not undergone
-* verification testing. Due to pending validation of its
-* correctness and stability, it has not yet been integrated into the
-* production codebase.
-*/
+ * Enhanced optimization implementation - experimental
+ *
+ * This class contains custom optimizations and performance improvements that
+ * address core efficiency bottlenecks in the original implementation.
+ *
+ * NOTE: This implementation remains experimental and has not undergone
+ * verification testing. Due to pending validation of its
+ * correctness and stability, it has not yet been integrated into the
+ * production codebase.
+ */
 
 // example: trace [a,c,c,d,g], splits [-1,2,4] yield [[],[a,c,c],[d,g]]
 // put in tree alignment
@@ -99,8 +99,11 @@ void calculatePossibleSplits(
 // it returns something like this  [0,5] = [[a], [b,v,d,y,u]] or [-1,5] = [[a, b,v,d,y,u]]
 std::vector<std::vector<int>> generateSplits(const std::shared_ptr<TreeNode> &node, const std::shared_ptr<std::vector<std::string>> trace)
 {
+    // maps activity to the child node that contains it
     std::unordered_map<std::string, std::string> activityChildMap;
+    // maps id of a child node to their position in the childrens array
     std::unordered_map<std::string, int> nodeIdPostionMap;
+    // maps child to each of the positions in the trace where the next trace element is owned by a different cihld
     std::vector<std::vector<int>> childPositions(node->getChildren().size());
 
     int count = 0;
@@ -116,6 +119,7 @@ std::vector<std::vector<int>> generateSplits(const std::shared_ptr<TreeNode> &no
         ++count;
     }
 
+    // takes note of each position in the trace where the child of the owner of that activity changes
     for (size_t i = 0; i < trace->size(); ++i)
     {
         std::string activity = trace->at(i);
