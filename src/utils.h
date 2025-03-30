@@ -13,14 +13,12 @@ struct PairHash
     }
 };
 
-std::string timeInMs();
-// std::string printDijsktraCosts(const std::unordered_map<std::pair<int, int>, int, PairHash> &dijkstraCosts);
-std::string intVecToString(const std::vector<int> &vec);
 std::shared_ptr<std::vector<int>> pruneTrace(const std::vector<std::shared_ptr<TreeNode>> &nodes, const std::shared_ptr<std::vector<int>> unprunedTrace);
-void printVector(const std::vector<std::string> &vec);
-void printNestedVector(const std::vector<std::vector<int>> &vec);
+std::shared_ptr<TreeNode> constructTree(const std::vector<std::pair<Operation, std::vector<std::shared_ptr<TreeNode>>>> &structure);
+std::string timeInMs();
+std::string visualizeIntTrace(const std::vector<int> &vec);
 void printNestedVector(const std::vector<std::shared_ptr<std::vector<std::string>>> &nestedVec);
-std::shared_ptr<TreeNode> constructTree(
-    const std::vector<std::pair<Operation, std::vector<std::shared_ptr<TreeNode>>>> &structure);
+void printNestedVector(const std::vector<std::vector<int>> &vec);
+void printVector(const std::vector<std::string> &vec);
 
 #endif // UTILS_H

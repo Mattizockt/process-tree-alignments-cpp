@@ -15,27 +15,6 @@ using IntVec = std::vector<int>;
 // Forward declaration necessary in C++ (unlike Python where functions can be called before definition)
 int dynAlign(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVec> trace);
 
-// Activity node alignment - equivalent to _dyn_align_leaf in Python
-// C++ needs to explicitly check if element exists in vector using std::find
-int dynAlignActivity(std::shared_ptr<TreeNode> node, std::shared_ptr<IntVec> trace)
-{
-    const int &activity = node->getActivity();
-
-    if (std::find(trace->begin(), trace->end(), activity) == trace->end())
-    {
-        return trace->size() + 1;
-    }
-    else
-    {
-        return trace->size() - 1;
-    }
-}
-
-int dynAlignSilentActivity(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVec> trace)
-{
-    return trace->size();
-}
-
 // Helper function to get segments - analogous to get_segments_for_sequence in Python
 std::vector<std::pair<int, int>> getSegmentsForSequence(std::shared_ptr<IntVec> trace, std::shared_ptr<TreeNode> node)
 {
@@ -241,23 +220,6 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVe
     return std::min(costs, dijkstraCosts[end]);
 }
 
-// Equivalent to Python's _dyn_align_xor
-int dynAlignXor(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVec> trace)
-{
-    int minCost = std::numeric_limits<int>::max();
-    for (const auto &child : node->getChildren())
-    {
-        int cost = dynAlign(child, trace);
-        if (cost == 0)
-        {
-            return cost;
-        }
-        minCost = std::min(minCost, cost);
-    }
-
-    return minCost;
-}
-
 // Equivalent to Python's _dyn_align_shuffle
 int dynAlignParallel(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVec> trace)
 {
@@ -285,6 +247,23 @@ int dynAlignParallel(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVe
                                });
 
     return cost + unmatched;
+}
+
+// Equivalent to Python's _dyn_align_xor
+int dynAlignXor(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVec> trace)
+{
+    int minCost = std::numeric_limits<int>::max();
+    for (const auto &child : node->getChildren())
+    {
+        int cost = dynAlign(child, trace);
+        if (cost == 0)
+        {
+            return cost;
+        }
+        minCost = std::min(minCost, cost);
+    }
+
+    return minCost;
 }
 
 // Implements _dyn_align_loop from Python using C++ constructs
@@ -394,6 +373,27 @@ int dynAlignXorLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVec
 
     int cost = dynAlignLoop(tempRedoLoop, trace);
     return cost;
+}
+
+// Activity node alignment - equivalent to _dyn_align_leaf in Python
+// C++ needs to explicitly check if element exists in vector using std::find
+int dynAlignActivity(std::shared_ptr<TreeNode> node, std::shared_ptr<IntVec> trace)
+{
+    const int &activity = node->getActivity();
+
+    if (std::find(trace->begin(), trace->end(), activity) == trace->end())
+    {
+        return trace->size() + 1;
+    }
+    else
+    {
+        return trace->size() - 1;
+    }
+}
+
+int dynAlignSilentActivity(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVec> trace)
+{
+    return trace->size();
 }
 
 int dynAlign(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVec> trace)
