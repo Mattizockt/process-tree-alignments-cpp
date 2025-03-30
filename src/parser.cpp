@@ -1,18 +1,18 @@
-#include "../include/rapidxml_utils.hpp"
 #include "../include/nlohmann/json.hpp"
+#include "../include/rapidxml_utils.hpp"
 #include "parser.h"
-#include "utils.h"
-#include "treeNode.h"
 #include "treeAlignment.h"
+#include "treeNode.h"
+#include "utils.h"
+#include <algorithm>
+#include <chrono>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <string>
-#include <vector>
-#include <unordered_map>
-#include <filesystem>
-#include <chrono>
-#include <algorithm>
 #include <random>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 // Type aliases for commonly used data structures
 using StringVec = std::vector<std::string>;
@@ -326,9 +326,8 @@ StringVec generatePtmlNames(const std::string &baseName, const StringVec &fileEn
  *
  * @param xesPath Directory containing XES files
  * @param ptmlPath Directory containing PTML files
- * @param outputFileName Path to the output JSON file
  */
-void parseAndAlign(const std::string &xesPath, const std::string &ptmlPath, const std::string &outputFileName)
+void parseAndAlign(const std::string &xesPath, const std::string &ptmlPath)
 {
     using json = nlohmann::json;
     StringVec fileNames;
@@ -414,12 +413,12 @@ void parseAndAlign(const std::string &xesPath, const std::string &ptmlPath, cons
 
                 timeFile << ptmlFile << ", ";
                 timeFile << duration << ", ";
-                timeFile << intVecToString(otherTrace) << ", ";
+                timeFile << visualizeIntTrace(otherTrace) << ", ";
                 timeFile << std::endl;
 
                 costFile << ptmlFile << ", ";
                 costFile << cost << ", ";
-                costFile << intVecToString(otherTrace) << ", ";
+                costFile << visualizeIntTrace(otherTrace) << ", ";
                 costFile << std::endl;
 
                 count++;

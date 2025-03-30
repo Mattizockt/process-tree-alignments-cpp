@@ -1,10 +1,10 @@
 #ifndef TREENODE_H
 #define TREENODE_H
 
-#include <unordered_map>
-#include <string>
-#include <vector>
 #include <memory>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 struct VectorHash {
     std::size_t operator()(std::vector<int> const& vec) const {
