@@ -150,5 +150,5 @@ def visualize_tree(path="./data/ptml/BPI_Challenge_2019_pt00.ptml"):
 
 
 create_ptml()
-# visualize_tree("./data/ptml/Road_Traffic_Fine_Management_Process_pt25.ptml")
+# visualize_tree("./data/ptml/BPI_Challenge_2012_pt00.ptml")
 # feed_compare_data("output.txt")

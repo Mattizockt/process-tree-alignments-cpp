@@ -91,6 +91,7 @@ std::vector<PairCost> outgoingEdges(std::pair<int, int> v, int numChild, int n, 
 }
 
 // Implements _dyn_align_sequence from Python with C++ idioms
+// uses upper bound already
 int dynAlignSequence(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVec> trace)
 {
     const auto &children = node->getChildren();
@@ -127,16 +128,9 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVe
         costs = std::numeric_limits<int>::max();
     }
 
-    if (costs == 0)
-    {
-        return 0;
-    }
-
     // special case for binary sequence operator (common case optimization)
     if (children.size() == 2)
     {
-        // remove elements that are not in the subtree
-        // TODO this way the trace always has to be recomputed? maybe there could be a more efficient solution
         std::shared_ptr<IntVec> prunedTrace = pruneTrace(children, trace);
         int aliens = trace->size() - prunedTrace->size();
 
@@ -283,7 +277,72 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVec> t
         return dynAlign(children[0], trace);
     }
 
-    // TODO no upper bound yet, can be introduced later while writing the thesis
+    // TODO as soon as alignxorloop is updated, this code might also be updated
+    // if the new dynalignxor creates new temporary nodes, they must have their activity lists filled
+    // otherwise this approach doesn't work (because it looks at activities of each child)
+    int upper_bound = std::numeric_limits<int>::max();
+
+    const auto &rChildrenActv = children[0]->getActivities();
+    const auto &firstTraceVal = trace->at(0);
+    const auto &lastTraceVal = trace->at(n - 1);
+
+    if (rChildrenActv.count(firstTraceVal) && rChildrenActv.count(lastTraceVal))
+    {
+        auto createSubtrace = [](const auto &trace, size_t i, size_t j)
+        {
+            return std::make_shared<IntVec>(trace->begin() + i, trace->begin() + j);
+        };
+
+        std::vector<std::shared_ptr<IntVec>> rParts;
+        std::vector<std::shared_ptr<IntVec>> qParts;
+
+        size_t i = 0;
+        while (i < n && rChildrenActv.count(trace->at(i)))
+        {
+            i += 1;
+        }
+        auto startPart = createSubtrace(trace, 0, i);
+        rParts.push_back(startPart);
+
+        while (i < n)
+        {
+            auto currElement = trace->at(i);
+            size_t j = i;
+            while (j < n && !(rChildrenActv.count(currElement)))
+            {
+                j += 1;
+            }
+            auto qPart = createSubtrace(trace, i, j);
+            qParts.push_back(qPart);
+
+            i = j;
+            currElement = trace->at(i);
+            while (i < n && rChildrenActv.count(currElement))
+            {
+                i += 1;
+            }
+            auto rPart = createSubtrace(trace, j, i);
+            rParts.push_back(rPart);
+        }
+
+        upper_bound = 0;
+
+        for (int i = 0; i < rParts.size(); i++)
+        {
+            upper_bound += dynAlign(children[0], rParts[i]);
+        }
+
+        for (int i = 0; i < qParts.size(); i++)
+        {
+            upper_bound += dynAlign(children[1], qParts[i]);
+        }
+    }
+
+    if (upper_bound == 0)
+    {
+        return 0;
+    }
+
     std::vector<std::pair<int, int>> edges;
     for (int i = 0; i <= n; ++i)
     {
