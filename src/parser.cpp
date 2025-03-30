@@ -1,4 +1,3 @@
-#include "../include/nlohmann/json.hpp"
 #include "../include/rapidxml_utils.hpp"
 #include "parser.h"
 #include "treeAlignment.h"
@@ -329,7 +328,6 @@ StringVec generatePtmlNames(const std::string &baseName, const StringVec &fileEn
  */
 void parseAndAlign(const std::string &xesPath, const std::string &ptmlPath)
 {
-    using json = nlohmann::json;
     StringVec fileNames;
 
     // Collect all file names in the XES directory
@@ -411,12 +409,10 @@ void parseAndAlign(const std::string &xesPath, const std::string &ptmlPath)
                 // in miliseconds
                 auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(executionEnd - executionStart).count();
 
-                timeFile << ptmlFile << ", ";
                 timeFile << duration << ", ";
                 timeFile << visualizeIntTrace(otherTrace) << ", ";
                 timeFile << std::endl;
 
-                costFile << ptmlFile << ", ";
                 costFile << cost << ", ";
                 costFile << visualizeIntTrace(otherTrace) << ", ";
                 costFile << std::endl;
