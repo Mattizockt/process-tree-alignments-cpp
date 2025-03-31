@@ -1,8 +1,10 @@
 from pathlib import Path
 from pm4py import discover_process_tree_inductive
-import pm4py
+import csv
 import json
-from pathlib import Path
+import matplotlib.pyplot as plt
+import numpy as np
+import pm4py
 import pm4py
 from pm4py.objects.conversion.process_tree.converter import (
     apply as process_tree_to_petri_net,
@@ -14,6 +16,7 @@ from pm4py.algo.conformance.alignments.petri_net.algorithm import (
 from pm4py.algo.conformance.alignments.process_tree.algorithm import (
     apply as pm4py_align_process_tree,
 )
+
 
 # Generate process trees (.ptml files) with different noise thresholds from a single event log (.xes)
 # For each event log, this function creates 4 variations of process tree models with increasing noise tolerance
@@ -149,6 +152,69 @@ def visualize_tree(path="./data/ptml/BPI_Challenge_2019_pt00.ptml"):
     pt_visualizer.view(gviz)
 
 
-create_ptml()
-# visualize_tree("./data/ptml/Road_Traffic_Fine_Management_Process_pt25.ptml")
+# read in output and plot it on graph
+def summarize_output(paths: list[str]):
+    # Initialize the figure once, outside the loop
+    plt.figure(figsize=(10, 6))
+
+    # Colors for different lines
+    colors = ["blue", "red", "green", "purple", "orange"]
+
+    # Initialize empty graphs
+    graphs = [[] for _ in range(len(paths))]
+
+    # Read data from each file
+    for i, path in enumerate(paths):
+        with open(path, "r", newline="", encoding="utf-8") as file:
+            csv_reader = csv.reader(
+                file,
+                delimiter=",",
+                skipinitialspace=True,
+                quotechar='"',
+                doublequote=True,
+            )
+            for j, row in enumerate(csv_reader):
+                if j == 1000:
+                    break
+                # Make sure to convert string to float for plotting
+                graphs[i].append(float(row[0]))
+
+    for i in range(len(graphs)):
+        miliseconds = sum(graphs[i])
+
+        minutes = miliseconds / 60000
+        minute_seconds = (miliseconds % 60000) / 1000
+
+        seconds = miliseconds / 3600
+
+        print(f"Graph {i+1} has the total duration of : {minutes} minutes and {minute_seconds} seconds")
+        print(f"Graph {i+1} has the an average duration of : {seconds / len(graphs[i])} seconds")
+        
+    # Plot all graphs on the same figure
+    for i, data in enumerate(graphs):
+        x_values = np.arange(len(data))
+        color = colors[i % len(colors)]
+        plt.plot(
+            x_values, data, color=color, linewidth=2, marker="o", label=f"Graph {i+1}"
+        )
+
+    # Add labels and styling
+    plt.xlabel("Position (i)")
+    plt.ylabel("Value")
+    plt.title("Multiple Graphs Visualization")
+    plt.grid(True, linestyle="--", alpha=0.7)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+
+paths = [
+    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/baseline_1.5k/BPI_Challenge_2012_pt00.ptml/times.csv",
+    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/loop_bound_1k/BPI_Challenge_2012_pt00.ptml/times.csv",
+]
+
+summarize_output(paths)
+
+# create_ptml()
+# visualize_tree("./data/ptml/BPI_Challenge_2012_pt00.ptml")
 # feed_compare_data("output.txt")
