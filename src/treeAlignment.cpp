@@ -62,7 +62,7 @@ struct PairCost
 
 // Generates outgoing edges for Dijkstra algorithm
 // analogous to Python version
-std::vector<PairCost> outgoingEdges(std::pair<int, int> v, int numChild, int n, std::shared_ptr<IntVec> trace, std::shared_ptr<TreeNode> node, int upperBound)
+std::vector<PairCost> outgoingEdges(std::pair<int, int> v, int numChild, int n, std::shared_ptr<IntVec> trace, std::shared_ptr<TreeNode> node)
 {
     std::vector<PairCost> result;
     if (v.first == numChild)
@@ -81,10 +81,6 @@ std::vector<PairCost> outgoingEdges(std::pair<int, int> v, int numChild, int n, 
         }
         std::shared_ptr<IntVec> subTrace = std::make_shared<IntVec>(trace->begin() + v.second, trace->begin() + k);
         int tempCost = dynAlign(node->getChildren().at(v.first), subTrace);
-        if (tempCost > upperBound)
-        {
-            continue;
-        }
         result.push_back(PairCost(std::pair<int, int>(v.first, v.second), std::pair<int, int>(v.first + 1, k), tempCost));
     }
     return result;
@@ -101,40 +97,10 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVe
                                { return sum + dynAlign(child, trace); });
     }
 
-    int pos = 0;
-    int old_pos = 0;
-    int costs = 0;
-
-    // Try greedy approach first - attempt to partition trace by activity membership
-    if (trace->size() > children.size() &&
-        children[0]->getActivities().count(trace->at(0)) &&
-        children.back()->getActivities().count(trace->back()))
-    {
-        for (const auto &child : children)
-        {
-            while (pos < trace->size() && child->getActivities().count(trace->at(pos)))
-            {
-                pos += 1;
-            }
-            std::shared_ptr<IntVec> subTrace = std::make_shared<IntVec>(trace->begin() + old_pos, trace->begin() + pos);
-            costs += dynAlign(child, subTrace);
-            old_pos = pos;
-        }
-    }
-
-    if (pos < trace->size())
-    {
-        costs = std::numeric_limits<int>::max();
-    }
-
-    if (costs == 0)
-    {
-        return 0;
-    }
-
-    // special case for binary sequence operator (common case optimization)
+        // special case for binary sequence operator (common case optimization)
     if (children.size() == 2)
     {
+        int costs = std::numeric_limits<int>::max();
         // remove elements that are not in the subtree
         // TODO this way the trace always has to be recomputed? maybe there could be a more efficient solution
         std::shared_ptr<IntVec> prunedTrace = pruneTrace(children, trace);
@@ -148,10 +114,6 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVe
             std::shared_ptr<IntVec> second_part = std::make_shared<IntVec>(prunedTrace->begin() + split, prunedTrace->end());
 
             auto leftCost = dynAlign(children[0], first_part) + aliens;
-            if (leftCost >= costs)
-            {
-                continue;
-            }
             auto rightCost = dynAlign(children[1], second_part);
 
             costs = std::min(leftCost + rightCost, costs);
@@ -203,12 +165,8 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVe
             }
         }
         visited[current] = true;
-        if (dijkstraCosts[current] > costs)
-        {
-            continue;
-        }
 
-        for (auto edge : outgoingEdges(current, numChildren, n, trace, node, costs))
+        for (auto edge : outgoingEdges(current, numChildren, n, trace, node))
         {
             if (dijkstraCosts[current] != std::numeric_limits<int>::max())
             {
@@ -217,7 +175,7 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVe
         }
     }
 
-    return std::min(costs, dijkstraCosts[end]);
+    return dijkstraCosts[end];
 }
 
 // Equivalent to Python's _dyn_align_shuffle
@@ -283,7 +241,6 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVec> t
         return dynAlign(children[0], trace);
     }
 
-    // TODO no upper bound yet, can be introduced later while writing the thesis
     std::vector<std::pair<int, int>> edges;
     for (int i = 0; i <= n; ++i)
     {
