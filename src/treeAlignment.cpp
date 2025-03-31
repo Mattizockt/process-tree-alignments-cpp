@@ -18,7 +18,8 @@ int dynAlign(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVec> trace
 // Helper function to get segments - analogous to get_segments_for_sequence in Python
 std::vector<std::pair<int, int>> getSegmentsForSequence(std::shared_ptr<IntVec> trace, std::shared_ptr<TreeNode> node)
 {
-    if (node->getChildren().size() != 2)
+    auto &children = node->getChildren();
+    if (children.size() != 2)
     {
         throw std::runtime_error("get_segments_for_sequence not implemented for more/less than two children.");
     }
@@ -29,10 +30,13 @@ std::vector<std::pair<int, int>> getSegmentsForSequence(std::shared_ptr<IntVec> 
         {traceSize, 0}};
 
     std::vector<int> splitPositions;
+    auto leftActivities = children[0]->getActivities();
+    auto rightActivities = children[1]->getActivities();
+
     for (int i = 1; i < traceSize; i++)
     {
-        if (node->getChildren()[1]->getActivities().count(trace->at(i)) &&
-            node->getChildren()[0]->getActivities().count(trace->at(i - 1)))
+        if (rightActivities.count(trace->at(i)) &&
+            leftActivities.count(trace->at(i - 1)))
         {
             splitPositions.push_back(i);
         }
@@ -114,7 +118,7 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVe
     int costs = 0;
 
     // Try greedy approach first - attempt to partition trace by activity membership
-    if (trace->size() > children.size() &&
+    if (n > numChildren &&
         children[0]->getActivities().count(trace->at(0)) &&
         children.back()->getActivities().count(trace->back()))
     {
@@ -189,7 +193,8 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVe
 
     // Dijkstra implementation - note Python would typically use a priority queue
     // right now not very efficient
-    while (visited.size() < vertices.size())
+    const auto verticesSize = vertices.size();
+    while (visited.size() < verticesSize)
     {
         std::pair<int, int> current;
         int min_cost = std::numeric_limits<int>::max();
@@ -292,8 +297,8 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVec> t
     int upper_bound = std::numeric_limits<int>::max();
 
     const auto &rChildrenActv = children[0]->getActivities();
-    const auto &firstTraceVal = trace->at(0);
-    const auto &lastTraceVal = trace->at(n - 1);
+    const auto firstTraceVal = trace->at(0);
+    const auto lastTraceVal = trace->at(n - 1);
 
     if (rChildrenActv.count(firstTraceVal) && rChildrenActv.count(lastTraceVal))
     {
@@ -461,12 +466,12 @@ int dynAlignSilentActivity(std::shared_ptr<TreeNode> node, const std::shared_ptr
 
 int dynAlign(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVec> trace)
 {
-
-    if (costTable.count(node->getId()) > 0)
+    std::string nodeId = node->getId();
+    if (costTable.count(nodeId) > 0)
     {
-        if (costTable[node->getId()].count(*trace) == 1)
+        if (costTable[nodeId].count(*trace) == 1)
         {
-            return costTable[node->getId()][*trace];
+            return costTable[nodeId][*trace];
         }
     }
 
@@ -498,6 +503,6 @@ int dynAlign(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVec> trace
         throw std::runtime_error("Unknown node operation: " + std::to_string(node->getOperation()));
     }
 
-    costTable[node->getId()][*trace] = costs;
+    costTable[nodeId][*trace] = costs;
     return costs;
 }
