@@ -202,6 +202,9 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVe
                 current = v;
             }
         }
+        // TODO is it possible to just stop the while loop if dijkstraCosts[current] > costs
+        // because its already larger than the upper bound?
+        // test once with more computation available
         visited[current] = true;
         if (dijkstraCosts[current] > costs)
         {
