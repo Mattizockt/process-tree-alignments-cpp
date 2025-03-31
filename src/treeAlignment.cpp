@@ -62,8 +62,12 @@ struct PairCost
 
 // Generates outgoing edges for Dijkstra algorithm
 // analogous to Python version
-std::vector<PairCost> outgoingEdges(std::pair<int, int> v, int numChild, int n, std::shared_ptr<IntVec> trace, std::shared_ptr<TreeNode> node, int upperBound)
+std::vector<PairCost> outgoingEdges(std::pair<int, int> v, std::shared_ptr<IntVec> trace, std::shared_ptr<TreeNode> node, int upperBound)
 {
+    int n = trace->size();
+    auto &children = node->getChildren();
+    int numChild = children.size();
+
     std::vector<PairCost> result;
     if (v.first == numChild)
     {
@@ -75,7 +79,7 @@ std::vector<PairCost> outgoingEdges(std::pair<int, int> v, int numChild, int n, 
         {
             continue;
         }
-        if (k < n - 1 && node->getChildren().at(v.first)->getActivities().count(trace->at(k)))
+        if (k < n - 1 && children.at(v.first)->getActivities().count(trace->at(k)))
         {
             continue;
         }
@@ -94,8 +98,11 @@ std::vector<PairCost> outgoingEdges(std::pair<int, int> v, int numChild, int n, 
 // uses upper bound already
 int dynAlignSequence(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVec> trace)
 {
+    int n = trace->size();
     const auto &children = node->getChildren();
-    if (trace->size() == 0)
+    int numChildren = children.size();
+
+    if (n == 0)
     {
         // C++ uses std::accumulate with lambda instead of Python's sum() with list comprehension
         return std::accumulate(children.begin(), children.end(), 0, [&trace](int sum, const auto &child)
@@ -129,24 +136,25 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVe
     }
 
     // special case for binary sequence operator (common case optimization)
-    if (children.size() == 2)
+    if (numChildren == 2)
     {
         std::shared_ptr<IntVec> prunedTrace = pruneTrace(children, trace);
-        int aliens = trace->size() - prunedTrace->size();
+        int prunedN = prunedTrace->size();
+        int aliens = n - prunedN;
 
         auto segments = getSegmentsForSequence(prunedTrace, node);
         for (const auto segment : segments)
         {
             int split = segment.first;
-            std::shared_ptr<IntVec> first_part = std::make_shared<IntVec>(prunedTrace->begin(), prunedTrace->begin() + split);
-            std::shared_ptr<IntVec> second_part = std::make_shared<IntVec>(prunedTrace->begin() + split, prunedTrace->end());
+            auto firstPart = createSubtrace(prunedTrace, 0, split);
+            auto secondPart = createSubtrace(prunedTrace, split, prunedN);
 
-            auto leftCost = dynAlign(children[0], first_part) + aliens;
+            auto leftCost = dynAlign(children[0], firstPart) + aliens;
             if (leftCost >= costs)
             {
                 continue;
             }
-            auto rightCost = dynAlign(children[1], second_part);
+            auto rightCost = dynAlign(children[1], secondPart);
 
             costs = std::min(leftCost + rightCost, costs);
         }
@@ -155,8 +163,6 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVe
 
     std::vector<std::pair<int, int>> vertices;
 
-    int numChildren = node->getChildren().size();
-    int n = trace->size();
     for (int i = 0; i <= numChildren; ++i)
     {
         for (int j = 0; j <= n; ++j)
@@ -202,7 +208,7 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVe
             continue;
         }
 
-        for (auto edge : outgoingEdges(current, numChildren, n, trace, node, costs))
+        for (auto edge : outgoingEdges(current, trace, node, costs))
         {
             if (dijkstraCosts[current] != std::numeric_limits<int>::max())
             {
@@ -288,11 +294,6 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVec> t
 
     if (rChildrenActv.count(firstTraceVal) && rChildrenActv.count(lastTraceVal))
     {
-        auto createSubtrace = [](const auto &trace, size_t i, size_t j)
-        {
-            return std::make_shared<IntVec>(trace->begin() + i, trace->begin() + j);
-        };
-
         std::vector<std::shared_ptr<IntVec>> rParts;
         std::vector<std::shared_ptr<IntVec>> qParts;
 
@@ -366,7 +367,7 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVec> t
             qrCosts[edge] = 0;
             continue;
         }
-        auto subTrace = std::make_shared<IntVec>(trace->begin() + edge.first, trace->begin() + edge.second);
+        auto subTrace = createSubtrace(trace, edge.first, edge.second);
         int cost = dynAlign(tempNode, subTrace);
         qrCosts[edge] = cost;
     }
@@ -403,7 +404,7 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVec> t
     std::unordered_map<int, int> rCosts(n);
     for (size_t i = 0; i <= n; i++)
     {
-        rCosts[i] = dynAlign(children[0], std::make_shared<IntVec>(trace->begin(), trace->begin() + i));
+        rCosts[i] = dynAlign(children[0], createSubtrace(trace, 0, i));
     }
 
     int minimalCosts = std::numeric_limits<int>::max();
