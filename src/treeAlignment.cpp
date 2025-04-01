@@ -15,6 +15,40 @@ using IntVec = std::vector<int>;
 // Forward declaration necessary in C++ (unlike Python where functions can be called before definition)
 int dynAlign(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVec> trace);
 
+// erase/insert is O(n) -> leaves us with O(trace->size() * n) complexity -> improve perhaps?
+// can't be used with multithreading, in that case, trace must be changed first.
+int estimateLowerBound(const std::shared_ptr<TreeNode> node, std::shared_ptr<IntVec> trace)
+{
+    int lowerBound = std::numeric_limits<int>::max();
+    size_t n = trace->size();
+
+    for (int i = 0; i < n; i++)
+    {
+        auto erased_val = trace->at(i);
+        trace->erase(trace->begin() + i);
+
+        std::string nodeId = node->getId();
+        if (costTable.count(nodeId) > 0)
+        {
+            if (costTable[nodeId].count(*trace) == 1)
+            {
+                lowerBound = std::min(lowerBound, costTable[nodeId][*trace]);
+            }
+        }
+        trace->insert(trace->begin() + i, erased_val);
+    }
+    if (lowerBound == std::numeric_limits<int>::max())
+    {
+        return 0;
+    }
+    else
+    {
+        // in case lower bound is 0
+        // -1 because the best possible alignment cost improvement is 1
+        return std::max(lowerBound - 1, 0);
+    }
+}
+
 // Helper function to get segments - analogous to get_segments_for_sequence in Python
 std::vector<std::pair<int, int>> getSegmentsForSequence(std::shared_ptr<IntVec> trace, std::shared_ptr<TreeNode> node)
 {
@@ -124,6 +158,19 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVe
             int split = segment.first;
             auto firstPart = createSubtrace(prunedTrace, 0, split);
             auto secondPart = createSubtrace(prunedTrace, split, prunedN);
+
+            auto firstLowerBound = estimateLowerBound(children[0], firstPart);
+            if (firstLowerBound + aliens >= costs)
+            {
+                // std::cout << "first lower bound termination: " << firstLowerBound << " bigger than costs: " << costs << std::endl;
+                continue;
+            }
+            auto secondLowerBound = estimateLowerBound(children[1], secondPart);
+            if (firstLowerBound + secondLowerBound + aliens >= costs)
+            {
+                // std::cout << "second lower bound termination: " << secondLowerBound << " bigger than costs: " << costs << std::endl;
+                continue;
+            }
 
             auto leftCost = dynAlign(children[0], firstPart) + aliens;
             auto rightCost = dynAlign(children[1], secondPart);
