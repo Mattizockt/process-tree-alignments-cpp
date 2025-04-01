@@ -316,7 +316,7 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVec> t
         while (i < n)
         {
             size_t j = i;
-            while (j < n && !(rChildrenActv.count(trace->at(i))))
+            while (j < n && !(rChildrenActv.count(trace->at(j))))
             {
                 j += 1;
             }
