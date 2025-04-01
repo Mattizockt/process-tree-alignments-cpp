@@ -121,15 +121,12 @@ std::vector<PairCost> outgoingEdges(std::pair<int, int> v, std::shared_ptr<IntVe
         {
             continue;
         }
-        std::shared_ptr<IntVec> subTrace = createSubtrace(trace, v.second, k);
-        int tempCost = dynAlign(node->getChildren().at(v.first), subTrace);
+        auto subTrace = createSubtrace(trace, v.second, k);
+        int tempCost = dynAlign(children.at(v.first), subTrace);
         if (tempCost > upperBound)
         {
             continue;
         }
-
-        auto subTrace = createSubtrace(trace, v.second, k);
-        int tempCost = dynAlign(children.at(v.first), subTrace);
         result.push_back(PairCost(std::pair<int, int>(v.first, v.second), std::pair<int, int>(v.first + 1, k), tempCost));
     }
     return result;
@@ -204,7 +201,7 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVe
             }
 
             auto leftCost = dynAlign(children[0], firstPart) + aliens;
-            if (leftCost > costs)
+            if (leftCost >= costs)
             {
                 continue;
             }
@@ -261,6 +258,10 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVe
         // because its already larger than the upper bound?
         // test once with more computation available
         visited[current] = true;
+        if (dijkstraCosts[current] > costs)
+        {
+            continue;
+        }
 
         for (auto edge : outgoingEdges(current, trace, node, costs))
         {
@@ -271,7 +272,7 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVe
         }
     }
 
-    return dijkstraCosts[end];
+    return std::min(costs, dijkstraCosts[end]);
 }
 
 // Equivalent to Python's _dyn_align_shuffle
@@ -361,9 +362,8 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVec> t
 
         while (i < n)
         {
-            auto currElement = trace->at(i);
             size_t j = i;
-            while (j < n && !(rChildrenActv.count(currElement)))
+            while (j < n && !(rChildrenActv.count(trace->at(j))))
             {
                 j += 1;
             }
@@ -371,8 +371,7 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVec> t
             qParts.push_back(qPart);
 
             i = j;
-            currElement = trace->at(i);
-            while (i < n && rChildrenActv.count(currElement))
+            while (i < n && rChildrenActv.count(trace->at(i)))
             {
                 i += 1;
             }
