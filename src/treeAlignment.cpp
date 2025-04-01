@@ -32,11 +32,11 @@ std::vector<std::pair<int, int>> getSegmentsForSequence(std::shared_ptr<IntVec> 
     std::vector<int> splitPositions;
     auto leftActivities = children[0]->getActivities();
     auto rightActivities = children[1]->getActivities();
-    
+
     for (int i = 1; i < traceSize; i++)
     {
-        if (leftActivities.count(trace->at(i)) &&
-            rightActivities.count(trace->at(i - 1)))
+        if (rightActivities.count(trace->at(i)) &&
+            leftActivities.count(trace->at(i - 1)))
         {
             splitPositions.push_back(i);
         }
