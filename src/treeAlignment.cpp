@@ -15,6 +15,40 @@ using IntVec = std::vector<int>;
 // Forward declaration necessary in C++ (unlike Python where functions can be called before definition)
 int dynAlign(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVec> trace);
 
+// erase/insert is O(n) -> leaves us with O(trace->size() * n) complexity -> improve perhaps?
+// can't be used with multithreading, in that case, trace must be changed first.
+int estimateLowerBound(const std::shared_ptr<TreeNode> node, std::shared_ptr<IntVec> trace)
+{
+    int lowerBound = std::numeric_limits<int>::max();
+    size_t n = trace->size();
+
+    for (int i = 0; i < n; i++)
+    {
+        auto erased_val = trace->at(i);
+        trace->erase(trace->begin() + i);
+
+        std::string nodeId = node->getId();
+        if (costTable.count(nodeId) > 0)
+        {
+            if (costTable[nodeId].count(*trace) == 1)
+            {
+                lowerBound = std::min(lowerBound, costTable[nodeId][*trace]);
+            }
+        }
+        trace->insert(trace->begin() + i, erased_val);
+    }
+    if (lowerBound == std::numeric_limits<int>::max())
+    {
+        return 0;
+    }
+    else
+    {
+        // in case lower bound is 0
+        // -1 because the best possible alignment cost improvement is 1
+        return std::max(lowerBound - 1, 0);
+    }
+}
+
 // Helper function to get segments - analogous to get_segments_for_sequence in Python
 std::vector<std::pair<int, int>> getSegmentsForSequence(std::shared_ptr<IntVec> trace, std::shared_ptr<TreeNode> node)
 {
@@ -87,12 +121,15 @@ std::vector<PairCost> outgoingEdges(std::pair<int, int> v, std::shared_ptr<IntVe
         {
             continue;
         }
-        std::shared_ptr<IntVec> subTrace = std::make_shared<IntVec>(trace->begin() + v.second, trace->begin() + k);
+        std::shared_ptr<IntVec> subTrace = createSubtrace(trace, v.second, k);
         int tempCost = dynAlign(node->getChildren().at(v.first), subTrace);
         if (tempCost > upperBound)
         {
             continue;
         }
+
+        auto subTrace = createSubtrace(trace, v.second, k);
+        int tempCost = dynAlign(children.at(v.first), subTrace);
         result.push_back(PairCost(std::pair<int, int>(v.first, v.second), std::pair<int, int>(v.first + 1, k), tempCost));
     }
     return result;
@@ -153,8 +190,21 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVe
             auto firstPart = createSubtrace(prunedTrace, 0, split);
             auto secondPart = createSubtrace(prunedTrace, split, prunedN);
 
+            auto firstLowerBound = estimateLowerBound(children[0], firstPart);
+            if (firstLowerBound + aliens >= costs)
+            {
+                // std::cout << "first lower bound termination: " << firstLowerBound << " bigger than costs: " << costs << std::endl;
+                continue;
+            }
+            auto secondLowerBound = estimateLowerBound(children[1], secondPart);
+            if (firstLowerBound + secondLowerBound + aliens >= costs)
+            {
+                // std::cout << "second lower bound termination: " << secondLowerBound << " bigger than costs: " << costs << std::endl;
+                continue;
+            }
+
             auto leftCost = dynAlign(children[0], firstPart) + aliens;
-            if (leftCost >= costs)
+            if (leftCost > costs)
             {
                 continue;
             }
@@ -211,10 +261,6 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVe
         // because its already larger than the upper bound?
         // test once with more computation available
         visited[current] = true;
-        if (dijkstraCosts[current] > costs)
-        {
-            continue;
-        }
 
         for (auto edge : outgoingEdges(current, trace, node, costs))
         {
@@ -225,7 +271,7 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVe
         }
     }
 
-    return std::min(costs, dijkstraCosts[end]);
+    return dijkstraCosts[end];
 }
 
 // Equivalent to Python's _dyn_align_shuffle
