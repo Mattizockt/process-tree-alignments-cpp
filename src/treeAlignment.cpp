@@ -30,10 +30,10 @@ int estimateLowerBound(const std::shared_ptr<TreeNode> node, std::shared_ptr<Int
         std::string nodeId = node->getId();
         if (costTable.count(nodeId) > 0)
         {
-            if (costTable[nodeId].count(*trace) == 1)
-            {
-                lowerBound = std::min(lowerBound, costTable[nodeId][*trace]);
-            }
+        if (costTable[nodeId].count(*trace) == 1)
+        {
+            lowerBound = std::min(lowerBound, costTable[nodeId][*trace]);
+        }
         }
         trace->insert(trace->begin() + i, erased_val);
     }
@@ -121,7 +121,14 @@ std::vector<PairCost> outgoingEdges(std::pair<int, int> v, std::shared_ptr<IntVe
         {
             continue;
         }
+
         auto subTrace = createSubtrace(trace, v.second, k);
+        // is bigger equals sufficient?
+        if (estimateLowerBound(node, subTrace) > upperBound)
+        {
+            continue;
+        }
+
         int tempCost = dynAlign(children.at(v.first), subTrace);
         if (tempCost > upperBound)
         {
@@ -190,13 +197,11 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVe
             auto firstLowerBound = estimateLowerBound(children[0], firstPart);
             if (firstLowerBound + aliens >= costs)
             {
-                // std::cout << "first lower bound termination: " << firstLowerBound << " bigger than costs: " << costs << std::endl;
                 continue;
             }
             auto secondLowerBound = estimateLowerBound(children[1], secondPart);
             if (firstLowerBound + secondLowerBound + aliens >= costs)
             {
-                // std::cout << "second lower bound termination: " << secondLowerBound << " bigger than costs: " << costs << std::endl;
                 continue;
             }
 
@@ -421,6 +426,12 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVec> t
             continue;
         }
         auto subTrace = createSubtrace(trace, edge.first, edge.second);
+        if (estimateLowerBound(node, subTrace) >= upper_bound)
+        {
+            qrCosts[edge] = upper_bound;
+            continue;
+        }
+
         int cost = dynAlign(tempNode, subTrace);
         qrCosts[edge] = cost;
     }
