@@ -19,6 +19,18 @@ int dynAlign(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVec> trace
 // can't be used with multithreading, in that case, trace must be changed first.
 int estimateLowerBound(const std::shared_ptr<TreeNode> node, std::shared_ptr<IntVec> trace)
 {
+    // check if original element already in cost table
+    std::string nodeId = node->getId();
+    if (costTable.count(nodeId) == 0)
+    {
+        return 0;
+    }
+
+    if (costTable[nodeId].count(*trace) == 1)
+    {
+        return costTable[nodeId][*trace];
+    }
+
     int lowerBound = std::numeric_limits<int>::max();
     size_t n = trace->size();
 
@@ -28,12 +40,9 @@ int estimateLowerBound(const std::shared_ptr<TreeNode> node, std::shared_ptr<Int
         trace->erase(trace->begin() + i);
 
         std::string nodeId = node->getId();
-        if (costTable.count(nodeId) > 0)
+        if (costTable[nodeId].count(*trace) == 1)
         {
-            if (costTable[nodeId].count(*trace) == 1)
-            {
-                lowerBound = std::min(lowerBound, costTable[nodeId][*trace]);
-            }
+            lowerBound = std::min(lowerBound, costTable[nodeId][*trace]);
         }
         trace->insert(trace->begin() + i, erased_val);
     }
