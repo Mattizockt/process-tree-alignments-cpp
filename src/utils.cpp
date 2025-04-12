@@ -83,7 +83,7 @@ void printNestedVector(const std::vector<std::shared_ptr<std::vector<std::string
     std::cout << "]\n";
 }
 
-std::shared_ptr<IntVec> pruneTrace(const std::vector<std::shared_ptr<TreeNode>> &nodes, const std::shared_ptr<IntVec> unprunedTrace)
+std::shared_ptr<IntVec> pruneTrace(const std::vector<std::shared_ptr<TreeNode>> &nodes, std::span<const int> unprunedTrace)
 {
     std::unordered_set<int> nodeLetters;
     for (const auto &node : nodes)
@@ -95,7 +95,7 @@ std::shared_ptr<IntVec> pruneTrace(const std::vector<std::shared_ptr<TreeNode>> 
     }
 
     std::shared_ptr<IntVec> prunedTrace = std::make_shared<IntVec>();
-    for (const auto &activity : *unprunedTrace)
+    for (const int activity : unprunedTrace)
     {
         if (nodeLetters.count(activity))
         {
@@ -122,6 +122,23 @@ std::string visualizeIntTrace(const std::vector<int> &vec)
         result += activityVector[vec[i]];
         result += "'";
         if (i < vec.size() - 1)
+        {
+            result += ", ";
+        }
+    }
+    result += ")\"";
+    return result;
+}
+
+std::string visualizeSpanTrace(std::span<const int> span)
+{
+    std::string result = "\"(";
+    for (size_t i = 0; i < span.size(); ++i)
+    {
+        result += "'";
+        result += activityVector[span[i]];
+        result += "'";
+        if (i < span.size() - 1)
         {
             result += ", ";
         }
