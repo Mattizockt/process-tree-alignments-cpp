@@ -5,12 +5,14 @@
 #include <string>
 #include <numeric>
 #include <limits>
+#include <stack>
 #include <vector>
 #include <algorithm>
 #include <iostream>
 
 using StringVec = std::vector<std::string>;
 using IntVec = std::vector<int>;
+using LoopEdge = std::pair<int, int>;
 
 // Forward declaration necessary in C++ (unlike Python where functions can be called before definition)
 int dynAlign(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVec> trace);
@@ -66,7 +68,7 @@ struct PairCost
 
 // Generates outgoing edges for Dijkstra algorithm
 // analogous to Python version
-std::vector<PairCost> outgoingEdges(std::pair<int, int> v, std::shared_ptr<IntVec> trace, std::shared_ptr<TreeNode> node)
+std::vector<PairCost> outgoingEdges(LoopEdge v, std::shared_ptr<IntVec> trace, std::shared_ptr<TreeNode> node)
 {
     int n = trace->size();
     auto &children = node->getChildren();
@@ -89,7 +91,7 @@ std::vector<PairCost> outgoingEdges(std::pair<int, int> v, std::shared_ptr<IntVe
         }
         auto subTrace = createSubtrace(trace, v.second, k);
         int tempCost = dynAlign(children.at(v.first), subTrace);
-        result.push_back(PairCost(std::pair<int, int>(v.first, v.second), std::pair<int, int>(v.first + 1, k), tempCost));
+        result.push_back(PairCost(LoopEdge(v.first, v.second), LoopEdge(v.first + 1, k), tempCost));
     }
     return result;
 }
@@ -235,6 +237,23 @@ int dynAlignXor(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVec> tr
     return minCost;
 }
 
+// returns a ranking measure based on how favorable this edge is
+int heuristic(LoopEdge edge, std::shared_ptr<IntVec> trace, std::shared_ptr<TreeNode> node)
+{
+    auto activities = node->getActivities();
+
+    int commonActivities = 0;
+    for (int i = edge.first; i < edge.second; i++)
+    {
+        if (activities.count(trace->at(i)))
+        {
+            commonActivities++;
+        }
+    }
+
+    return std::pow(commonActivities, 2) / (edge.second - edge.first);
+}
+
 // Implements _dyn_align_loop from Python using C++ constructs
 // for traces of form R(QR)*
 int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVec> trace)
@@ -252,7 +271,7 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVec> t
         return dynAlign(children[0], trace);
     }
 
-    std::vector<std::pair<int, int>> edges;
+    std::vector<LoopEdge> edges;
     for (int i = 0; i <= n; ++i)
     {
         for (int j = i; j <= n; ++j)
@@ -267,7 +286,7 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVec> t
     tempNode->addChild(children[1]);
     tempNode->addChild(children[0]);
 
-    std::unordered_map<std::pair<int, int>, int, PairHash> qrCosts;
+    std::unordered_map<LoopEdge, int, PairHash> qrCosts;
     for (const auto &edge : edges)
     {
         if (edge.first == edge.second)
@@ -275,9 +294,14 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, const std::shared_ptr<IntVec> t
             qrCosts[edge] = 0;
             continue;
         }
-        auto subTrace = createSubtrace(trace, edge.first, edge.second);
-        int cost = dynAlign(tempNode, subTrace);
-        qrCosts[edge] = cost;
+        qrCosts[edge] = std::numeric_limits<int>::max();
+    }
+
+    // calculate r costs
+    std::stack<LoopEdge> stack;
+    
+    for (int i = 0; i <= n; i++)
+    {
     }
 
     for (size_t index = 0; index < n; index++)
