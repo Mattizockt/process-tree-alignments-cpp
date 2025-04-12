@@ -5,6 +5,7 @@
 #include "../src/treeNode.h"
 #include "../src/treeAlignment.h"
 #include <iostream>
+#include <span>
 
 // Global type aliases for better readability
 using StringVec = std::vector<std::string>;
@@ -162,19 +163,19 @@ TEST_CASE("dynAlign works correctly")
 
     SECTION("Empty Trace")
     {
-        auto vec = std::make_shared<std::vector<int>>(std::initializer_list<int>{});
+        auto vec = std::span<const int>(std::initializer_list<int>{});
         REQUIRE(dynAlign(root, vec) == 4);
     }
 
     SECTION("Trace: eba")
     {
-        auto vec = std::make_shared<std::vector<int>>(std::initializer_list<int>{3, 2, 1});
+        auto vec = std::span<const int>(std::initializer_list<int>{3, 2, 1});
         REQUIRE(dynAlign(root, vec) == 1);
     }
 
     SECTION("Trace: ebad")
     {
-        auto vec = std::make_shared<std::vector<int>>(std::initializer_list<int>{3, 2, 1, 5});
+        auto vec = std::span<const int>(std::initializer_list<int>{3, 2, 1, 5});
 
         REQUIRE(dynAlign(root, vec) == 0);
     }
@@ -182,7 +183,7 @@ TEST_CASE("dynAlign works correctly")
     SECTION("Trace: babebbdddcbb")
     {
         // abecd
-        auto vec = std::make_shared<std::vector<int>>(std::initializer_list<int>{2, 1, 2, 3, 2, 2, 5, 5, 5, 4, 2, 2});
+        auto vec = std::span<const int>(std::initializer_list<int>{2, 1, 2, 3, 2, 2, 5, 5, 5, 4, 2, 2});
         REQUIRE(dynAlign(root, vec) == 8);
     }
 
@@ -199,7 +200,7 @@ TEST_CASE("dynAlign works correctly")
 
         SECTION("Trace: abfabfabfabfabfabfabfabf")
         {
-            auto vec = std::make_shared<std::vector<int>>(std::initializer_list<int>{1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3});
+            auto vec = std::span<const int>(std::initializer_list<int>{1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3});
 
             REQUIRE(dynAlign(loopRoot, vec) == 1);
         }
@@ -207,13 +208,13 @@ TEST_CASE("dynAlign works correctly")
         SECTION("Trace: abbbbf")
         {
 
-            auto vec = std::make_shared<std::vector<int>>(std::initializer_list<int>{1, 2, 2, 2, 2, 3});
+            auto vec = std::span<const int>(std::initializer_list<int>{1, 2, 2, 2, 2, 3});
             REQUIRE(dynAlign(loopRoot, vec) == 4);
         }
 
         SECTION("Empty Trace")
         {
-            auto vec = std::make_shared<std::vector<int>>(std::initializer_list<int>{});
+            auto vec = std::span<const int>(std::initializer_list<int>{});
             REQUIRE(dynAlign(loopRoot, vec) == 2);
         }
     }

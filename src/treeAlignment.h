@@ -2,7 +2,8 @@
 #define TREEALIGNMENT_H
 #include "treeNode.h"
 #include <memory>
+#include <span>
 
-int dynAlign(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vector<int>> trace);
+int dynAlign(std::shared_ptr<TreeNode> node, std::span<const int> trace);
 
 #endif // TREENODE_H

@@ -9,6 +9,7 @@
 #include <fstream>
 #include <iostream>
 #include <random>
+#include <span>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -25,7 +26,7 @@ std::vector<std::string> activityVector;              // Reverse mapping: intege
 // removes duplicate traces
 std::vector<IntVec> getVariants(const std::vector<IntVec> traces)
 {
-    std::unordered_map<std::vector<int>, bool, VectorHash> variantsMap;
+    std::unordered_map<std::vector<int>, bool, SpanHash> variantsMap;
 
     for (const IntVec &trace : traces)
     {
@@ -398,23 +399,24 @@ void parseAndAlign(const std::string &xesPath, const std::string &ptmlPath)
 
             int count = 0;
             // Compute alignment cost for each trace
-            for (const auto &otherTrace : traces)
+            for (const auto &trace : traces)
             {
                 costTable.clear(); // Clear cost table for new alignment
+                std::span<const int> traceSpan = trace;
 
                 auto executionStart = std::chrono::high_resolution_clock::now();
-                auto cost = dynAlign(processTree, std::make_shared<IntVec>(otherTrace));
+                auto cost = dynAlign(processTree, traceSpan);
                 auto executionEnd = std::chrono::high_resolution_clock::now();
 
                 // in miliseconds
                 auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(executionEnd - executionStart).count();
 
                 timeFile << duration << ", ";
-                timeFile << visualizeIntTrace(otherTrace) << ", ";
+                timeFile << visualizeIntTrace(trace) << ", ";
                 timeFile << std::endl;
 
                 costFile << cost << ", ";
-                costFile << visualizeIntTrace(otherTrace) << ", ";
+                costFile << visualizeIntTrace(trace) << ", ";
                 costFile << std::endl;
 
                 count++;
