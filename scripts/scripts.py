@@ -153,7 +153,7 @@ def visualize_tree(path="./data/ptml/BPI_Challenge_2019_pt00.ptml"):
 
 
 # read in output and plot it on graph
-def summarize_output(paths: list[str]):
+def summarize_output(paths: list[str], numData: int = 35):
     # Initialize the figure once, outside the loop
     plt.figure(figsize=(10, 6))
 
@@ -174,7 +174,7 @@ def summarize_output(paths: list[str]):
                 doublequote=True,
             )
             for j, row in enumerate(csv_reader):
-                if j == 1000:
+                if j == numData:
                     break
                 # Make sure to convert string to float for plotting
                 graphs[i].append(float(row[0]))
@@ -182,14 +182,18 @@ def summarize_output(paths: list[str]):
     for i in range(len(graphs)):
         miliseconds = sum(graphs[i])
 
-        minutes = miliseconds / 60000
+        minutes = miliseconds // 60000
         minute_seconds = (miliseconds % 60000) / 1000
 
         seconds = miliseconds / 3600
 
-        print(f"Graph {i+1} has the total duration of : {minutes} minutes and {minute_seconds} seconds")
-        print(f"Graph {i+1} has the an average duration of : {seconds / len(graphs[i])} seconds")
-        
+        print(
+            f"Graph {i+1} has the total duration of : {minutes} minutes and {minute_seconds} seconds"
+        )
+        print(
+            f"Graph {i+1} has the an average duration of : {seconds / len(graphs[i])} seconds"
+        )
+
     # Plot all graphs on the same figure
     for i, data in enumerate(graphs):
         x_values = np.arange(len(data))
@@ -209,8 +213,9 @@ def summarize_output(paths: list[str]):
 
 
 paths = [
-    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/baseline_1.5k/BPI_Challenge_2012_pt00.ptml/times.csv",
-    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/loop_bound_1k/BPI_Challenge_2012_pt00.ptml/times.csv",
+    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/lower_35_50/BPI_Challenge_2012_pt50.ptml/times.csv",
+    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/upper_35_50/BPI_Challenge_2012_pt50.ptml/times.csv",
+    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/both_35_50/BPI_Challenge_2012_pt50.ptml/times.csv"
 ]
 
 summarize_output(paths)

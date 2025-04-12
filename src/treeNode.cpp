@@ -7,7 +7,7 @@
 
 int TreeNode::numberOfNodes = 0;
 
-std::unordered_map<std::string, std::unordered_map<std::vector<int>, int, VectorHash>> costTable;
+std::unordered_map<std::string, std::unordered_map<std::vector<int>, int, SpanHash, SpanEqual>> costTable;
 
 TreeNode::TreeNode()
     : activities(), children(), activity(), operation(), id(std::to_string(++numberOfNodes))
