@@ -18,34 +18,41 @@ int dynAlign(std::shared_ptr<TreeNode> node, std::span<const int> trace);
 
 // erase/insert is O(n) -> leaves us with O(trace->size() * n) complexity -> improve perhaps?
 // can't be used with multithreading, in that case, trace must be changed first.
-int estimateLowerBound(const std::shared_ptr<TreeNode> node, std::shared_ptr<IntVec> trace)
+int estimateLowerBound(const std::shared_ptr<TreeNode> node, std::span<const int> trace)
 {
     // check if original element already in cost table
     std::string nodeId = node->getId();
+    size_t n = trace.size();
+
     if (costTable.count(nodeId) == 0)
     {
         return 0;
     }
+    auto &nodeMap = costTable[nodeId];
 
-    if (costTable[nodeId].count(*trace) == 1)
+    auto it = nodeMap.find(trace);
+    if (it != nodeMap.end())
     {
-        return costTable[nodeId][*trace];
+        return it->second;
     }
 
     int lowerBound = std::numeric_limits<int>::max();
-    size_t n = trace->size();
+    IntVec traceCopy(trace.begin(), trace.end());
 
     for (int i = 0; i < n; i++)
     {
-        auto erased_val = trace->at(i);
-        trace->erase(trace->begin() + i);
+        auto erased_val = traceCopy.at(i);
+        traceCopy.erase(traceCopy.begin() + i);
 
-        std::string nodeId = node->getId();
-        if (costTable[nodeId].count(*trace) == 1)
+        std::span<int> traceCopyView = traceCopy;
+
+        auto it = nodeMap.find(traceCopyView);
+        if (it != nodeMap.end())
         {
-            lowerBound = std::min(lowerBound, costTable[nodeId][*trace]);
+            lowerBound = std::min(lowerBound, it->second);
         }
-        trace->insert(trace->begin() + i, erased_val);
+
+        traceCopy.insert(traceCopy.begin() + i, erased_val);
     }
     if (lowerBound == std::numeric_limits<int>::max())
     {
