@@ -9,6 +9,7 @@
 #include <vector>
 #include <algorithm>
 #include <iostream>
+#include <cmath>
 
 using StringVec = std::vector<std::string>;
 using IntVec = std::vector<int>;
@@ -240,14 +241,15 @@ int dynAlignXor(std::shared_ptr<TreeNode> node, std::span<const int> trace)
 }
 
 // returns a ranking measure based on how favorable this edge is
-int heuristic(LoopEdge edge, std::shared_ptr<IntVec> trace, std::shared_ptr<TreeNode> node)
+// update this to work more as a lower bound
+float heuristic(IntPair edge, std::span<const int> trace, std::shared_ptr<TreeNode> node)
 {
     auto activities = node->getActivities();
 
     int commonActivities = 0;
     for (int i = edge.first; i < edge.second; i++)
     {
-        if (activities.count(trace->at(i)))
+        if (activities.count(trace[i]))
         {
             commonActivities++;
         }
@@ -288,22 +290,65 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, std::span<const int> trace)
     tempNode->addChild(children[1]);
     tempNode->addChild(children[0]);
 
-    std::unordered_map<IntPair, int, PairHash> qrCosts;
-    for (const auto &edge : edges)
+    // TODO change to vector
+    std::unordered_map<int, int> rCosts(n);
+    for (size_t i = 0; i <= n; i++)
     {
-        if (edge.first == edge.second)
-        {
-            qrCosts[edge] = 0;
-            continue;
-        }
-        qrCosts[edge] = std::numeric_limits<int>::max();
+        rCosts[i] = dynAlign(children[0], trace.subspan(0, i));
     }
 
-    // calculate r costs
-    std::stack<LoopEdge> stack;
-    
-    for (int i = 0; i <= n; i++)
+    std::unordered_map<IntPair, int, PairHash> qrCosts;
+    std::stack<IntPair> stack;
+    stack.push(IntPair(0, 0));
+
+    int upperBound = std::numeric_limits<int>::max();
+    while (!stack.empty())
     {
+        IntPair edge = stack.top();
+        stack.pop();
+
+        int edgeCost = dynAlign(tempNode, trace.subspan(edge.first, edge.second - edge.first));
+        if (edgeCost >= upperBound)
+        {
+            continue;
+        }
+
+        auto it = qrCosts.find(edge);
+        if (it != qrCosts.end() && edgeCost >= it->second)
+        {
+            continue;
+        }
+
+        qrCosts[edge] = edgeCost;
+
+        // if (edge.second == n)
+        // {
+        //     upperBound = edgeCost;
+        // }
+        // else
+        // {
+        float bestHeuristic = -1.0;
+        IntPair bestEdge;
+        for (int i = edge.second + 1; i <= n; i++)
+        {
+            IntPair newEdge(edge.second, i);
+            float estimate = heuristic(newEdge, trace, tempNode);
+            if (estimate > bestHeuristic)
+            {
+                if (bestHeuristic != -1.0)
+                {
+                    stack.push(bestEdge);
+                }
+                bestHeuristic = estimate;
+                bestEdge = newEdge;
+            }
+            else
+            {
+                stack.push(newEdge);
+            }
+        }
+        stack.push(bestEdge);
+        // }
     }
 
     for (size_t index = 0; index < n; index++)
@@ -333,12 +378,6 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, std::span<const int> trace)
         {
             break;
         }
-    }
-
-    std::unordered_map<int, int> rCosts(n);
-    for (size_t i = 0; i <= n; i++)
-    {
-        rCosts[i] = dynAlign(children[0], trace.subspan(0, i));
     }
 
     int minimalCosts = std::numeric_limits<int>::max();
