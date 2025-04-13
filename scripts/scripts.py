@@ -218,8 +218,9 @@ paths = [
     "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/both_35_50/BPI_Challenge_2012_pt50.ptml/times.csv"
 ]
 
-summarize_output(paths)
+# summarize_output(paths)
 
 # create_ptml()
-# visualize_tree("./data/ptml/BPI_Challenge_2012_pt00.ptml")
+visualize_tree("./data/ptml/BPI_Challenge_2012_pt50.ptml")
+# visualize_tree("./data/ptml/Road_Traffic_Fine_Management_Process_pt50.ptml")
 # feed_compare_data("output.txt")

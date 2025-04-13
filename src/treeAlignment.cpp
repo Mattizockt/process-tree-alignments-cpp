@@ -290,107 +290,91 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, std::span<const int> trace)
     tempNode->addChild(children[1]);
     tempNode->addChild(children[0]);
 
-    // TODO change to vector
-    std::unordered_map<int, int> rCosts(n);
-    for (size_t i = 0; i <= n; i++)
-    {
-        rCosts[i] = dynAlign(children[0], trace.subspan(0, i));
-    }
-
-    std::unordered_map<IntPair, int, PairHash> qrCosts;
     std::stack<IntPair> stack;
-    stack.push(IntPair(0, 0));
+    std::unordered_map<IntPair, int, PairHash> qrCosts;
 
     int upperBound = std::numeric_limits<int>::max();
-    while (!stack.empty())
+    for (size_t i = 0; i <= n; i++)
     {
-        IntPair edge = stack.top();
-        stack.pop();
+        int rCost = dynAlign(children[0], trace.subspan(0, i));
 
-        int edgeCost = dynAlign(tempNode, trace.subspan(edge.first, edge.second - edge.first));
-        if (edgeCost >= upperBound)
+        stack.push(IntPair(i, i));
+        // assume that qr cost (i,i) == 0
+        // not elegant but okay for testing
+        bool firstStackElement = true;
+        while (!stack.empty())
         {
-            continue;
-        }
+            IntPair edge = stack.top();
+            stack.pop();
+            IntPair startEdge(0, edge.first);
+            IntPair totalEdge(0, edge.second);
 
-        auto it = qrCosts.find(edge);
-        if (it != qrCosts.end() && edgeCost >= it->second)
-        {
-            continue;
-        }
-
-        qrCosts[edge] = edgeCost;
-
-        // if (edge.second == n)
-        // {
-        //     upperBound = edgeCost;
-        // }
-        // else
-        // {
-        float bestHeuristic = -1.0;
-        IntPair bestEdge;
-        for (int i = edge.second + 1; i <= n; i++)
-        {
-            IntPair newEdge(edge.second, i);
-            float estimate = heuristic(newEdge, trace, tempNode);
-            if (estimate > bestHeuristic)
+            int prevEdgesCost;
+            if (firstStackElement)
             {
-                if (bestHeuristic != -1.0)
-                {
-                    stack.push(bestEdge);
-                }
-                bestHeuristic = estimate;
-                bestEdge = newEdge;
+                prevEdgesCost = rCost;
+                firstStackElement = false;
             }
             else
             {
-                stack.push(newEdge);
+                prevEdgesCost = qrCosts[startEdge];
             }
-        }
-        stack.push(bestEdge);
-        // }
-    }
 
-    for (size_t index = 0; index < n; index++)
-    {
-        bool change = false;
-        for (const auto &edge : edges)
-        {
-
-            if (qrCosts[edge] == 0)
+            if (prevEdgesCost >= upperBound)
             {
                 continue;
             }
 
-            int optimalCost = qrCosts[edge];
-            for (size_t j = edge.first + 1; j < edge.second; j++)
+            // TODO temporary solution that's not too elegant.
+            int edgesCost = edge.second == edge.first ? prevEdgesCost : prevEdgesCost + dynAlign(tempNode, trace.subspan(edge.first, edge.second - edge.first));
+            if (edgesCost >= upperBound)
             {
-                int newCost = qrCosts[{edge.first, j}] + qrCosts[{j, edge.second}];
-                if (newCost < optimalCost)
-                {
-                    optimalCost = newCost;
-                    change = true;
-                }
+                continue;
             }
-            qrCosts[edge] = optimalCost;
-        }
-        if (!change)
-        {
-            break;
+
+            auto it = qrCosts.find(totalEdge);
+            if (it != qrCosts.end() && edgesCost >= it->second)
+            {
+                continue;
+            }
+
+            qrCosts[totalEdge] = edgesCost;
+
+            if (totalEdge.second == n)
+            {
+                upperBound = edgesCost;
+            }
+            else
+            {
+                // calculate outgoing edges
+                float bestHeuristic = -1.0;
+                IntPair bestEdge;
+                for (int i = totalEdge.second + 1; i <= n; i++)
+                {
+                    IntPair newEdge(totalEdge.second, i);
+                    // verify heuristic
+                    float estimate = heuristic(newEdge, trace, tempNode);
+                    // perhaps sort them, not only get the best one??
+                    // maybe use a priority queue
+                    if (estimate > bestHeuristic)
+                    {
+                        if (bestHeuristic != -1.0)
+                        {
+                            stack.push(bestEdge);
+                        }
+                        bestHeuristic = estimate;
+                        bestEdge = newEdge;
+                    }
+                    else
+                    {
+                        stack.push(newEdge);
+                    }
+                }
+                stack.push(bestEdge);
+            }
         }
     }
-
-    int minimalCosts = std::numeric_limits<int>::max();
-    for (size_t i = 0; i <= n; i++)
-    {
-        int costs = rCosts[i] + qrCosts[{i, n}];
-        if (costs < minimalCosts)
-        {
-            minimalCosts = costs;
-        }
-    }
-
-    return minimalCosts;
+    return upperBound;
 }
 
 // some event logs use a XorLoop instead of a RedoLoop
