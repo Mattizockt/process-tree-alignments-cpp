@@ -152,6 +152,40 @@ def visualize_tree(path="./data/ptml/BPI_Challenge_2019_pt00.ptml"):
     pt_visualizer.view(gviz)
 
 
+def compare_output(paths: list[str], numData: int = 35):
+
+    dicts = [dict() for _ in range(len(paths))]
+
+    # summarize the costs
+    for i, path in enumerate(paths):
+        with open(path, "r", newline="", encoding="utf-8") as file:
+            csv_reader = csv.reader(
+                file,
+                delimiter=",",
+                skipinitialspace=True,
+                quotechar='"',
+                doublequote=True,
+            )
+            for j, row in enumerate(csv_reader):
+                if j == numData:
+                    break
+
+                dicts[i][j] = row[0]
+                # Make sure to convert string to float for plotting
+
+    # compare for errors
+
+    for i in range(len(dicts[0])):
+        for j in range(len(dicts)):
+            if dicts[j][i] != dicts[0][i]:
+                print(
+                    f"Error in {paths[j]} at index {i}: {dicts[j][i]} != {dicts[0][i]}"
+                )
+                break
+
+    print("finished comparison")
+
+
 # read in output and plot it on graph
 def summarize_output(paths: list[str], numData: int = 35):
     # Initialize the figure once, outside the loop
@@ -213,12 +247,13 @@ def summarize_output(paths: list[str], numData: int = 35):
 
 
 paths = [
-    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/lower_35_50/BPI_Challenge_2012_pt50.ptml/times.csv",
-    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/upper_35_50/BPI_Challenge_2012_pt50.ptml/times.csv",
-    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/both_35_50/BPI_Challenge_2012_pt50.ptml/times.csv"
+    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/double/BPI_Challenge_2012_pt50.ptml/costs.csv",
+    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/with_vector/BPI_Challenge_2012_pt50.ptml/costs.csv",
+    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/without_vector/BPI_Challenge_2012_pt50.ptml/costs.csv",
 ]
 
-summarize_output(paths)
+# summarize_output(paths)
+compare_output(paths)
 
 # create_ptml()
 # visualize_tree("./data/ptml/BPI_Challenge_2012_pt00.ptml")
