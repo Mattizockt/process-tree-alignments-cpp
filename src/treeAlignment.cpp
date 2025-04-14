@@ -242,11 +242,11 @@ int dynAlignXor(std::shared_ptr<TreeNode> node, std::span<const int> trace)
 
 // returns a ranking measure based on how favorable this edge is
 // update this to work more as a lower bound
-float heuristic(IntPair edge, std::span<const int> trace, std::shared_ptr<TreeNode> node)
+float estimateEdgeCost(IntPair edge, std::span<const int> trace, std::shared_ptr<TreeNode> node)
 {
-    auto activities = node->getActivities();
-
+    const auto& activities = node->getActivities();
     int commonActivities = 0;
+
     for (int i = edge.first; i < edge.second; i++)
     {
         if (activities.count(trace[i]))
@@ -262,26 +262,16 @@ float heuristic(IntPair edge, std::span<const int> trace, std::shared_ptr<TreeNo
 // for traces of form R(QR)*
 int dynAlignLoop(std::shared_ptr<TreeNode> node, std::span<const int> trace)
 {
-    auto &children = node->getChildren();
-
+    const auto &children = node->getChildren();
     if (children.size() != 2)
     {
         throw std::runtime_error("Loop node with id: " + node->getId() + " does not have exactly two children.");
     }
 
-    int n = trace.size();
+    const int n = trace.size();
     if (n == 0)
     {
         return dynAlign(children[0], trace);
-    }
-
-    std::vector<IntPair> edges;
-    for (int i = 0; i <= n; ++i)
-    {
-        for (int j = i; j <= n; ++j)
-        {
-            edges.emplace_back(i, j);
-        }
     }
 
     // QR bits are aligned by introducing a temporary sequence node
@@ -290,22 +280,22 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, std::span<const int> trace)
     tempNode->addChild(children[1]);
     tempNode->addChild(children[0]);
 
-    std::stack<IntPair> stack;
     std::unordered_map<IntPair, int, PairHash> qrCosts;
-
     int upperBound = std::numeric_limits<int>::max();
+    
+    std::stack<IntPair> stack;
     for (size_t i = 0; i <= n; i++)
     {
         int rCost = dynAlign(children[0], trace.subspan(0, i));
 
         stack.push(IntPair(i, i));
-        // assume that qr cost (i,i) == 0
-        // not elegant but okay for testing
         bool firstStackElement = true;
+
         while (!stack.empty())
         {
             IntPair edge = stack.top();
             stack.pop();
+
             IntPair startEdge(0, edge.first);
             IntPair totalEdge(0, edge.second);
 
@@ -325,15 +315,25 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, std::span<const int> trace)
                 continue;
             }
 
-            // TODO temporary solution that's not too elegant.
-            int edgesCost = edge.second == edge.first ? prevEdgesCost : prevEdgesCost + dynAlign(tempNode, trace.subspan(edge.first, edge.second - edge.first));
+            int edgesCost;
+            if (edge.second == edge.first) {
+                // Empty segment case
+                edgesCost = prevEdgesCost;
+            } else {
+                // Calculate alignment cost for this segment
+                edgesCost = prevEdgesCost + dynAlign(
+                    tempNode, 
+                    trace.subspan(edge.first, edge.second - edge.first)
+                );
+            }
+
             if (edgesCost >= upperBound)
             {
                 continue;
             }
 
-            auto it = qrCosts.find(totalEdge);
-            if (it != qrCosts.end() && edgesCost >= it->second)
+            auto existingEdge = qrCosts.find(totalEdge);
+            if (existingEdge != qrCosts.end() && edgesCost >= existingEdge->second)
             {
                 continue;
             }
@@ -352,10 +352,8 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, std::span<const int> trace)
                 for (int i = totalEdge.second + 1; i <= n; i++)
                 {
                     IntPair newEdge(totalEdge.second, i);
-                    // verify heuristic
-                    float estimate = heuristic(newEdge, trace, tempNode);
+                    float estimate = estimateEdgeCost(newEdge, trace, tempNode);
                     // perhaps sort them, not only get the best one??
-                    // maybe use a priority queue
                     if (estimate > bestHeuristic)
                     {
                         if (bestHeuristic != -1.0)
