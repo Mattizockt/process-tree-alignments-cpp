@@ -69,7 +69,7 @@ struct PairCost
 
 // Generates outgoing edges for Dijkstra algorithm
 // analogous to Python version
-std::vector<PairCost> outgoingEdges(IntPair v, std::span<const int> trace, std::shared_ptr<TreeNode> node)
+std::vector<PairCost> outgoingEdges(IntPair v, std::span<const int> trace, std::shared_ptr<TreeNode> node, int upperBound)
 {
     int n = trace.size();
     auto &children = node->getChildren();
@@ -92,6 +92,10 @@ std::vector<PairCost> outgoingEdges(IntPair v, std::span<const int> trace, std::
         }
         auto subTrace = trace.subspan(v.second, k - v.second);
         int tempCost = dynAlign(children.at(v.first), subTrace);
+        if (tempCost > upperBound)
+        {
+            continue;
+        }
         result.push_back(PairCost(IntPair(v.first, v.second), IntPair(v.first + 1, k), tempCost));
     }
     return result;
@@ -111,12 +115,35 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, std::span<const int> trace)
                                { return sum + dynAlign(child, trace); });
     }
 
+    int pos = 0;
+    int old_pos = 0;
+    int costs = 0;
+
+    // Try greedy approach first - attempt to partition trace by activity membership
+    if (n > numChildren &&
+        children[0]->getActivities().count(trace[0]) &&
+        children.back()->getActivities().count(trace.back()))
+    {
+        for (const auto &child : children)
+        {
+            while (pos < trace.size() && child->getActivities().count(trace[pos]))
+            {
+                pos += 1;
+            }
+            auto subTrace = trace.subspan(old_pos, pos - old_pos);
+            costs += dynAlign(child, subTrace);
+            old_pos = pos;
+        }
+    }
+
+    if (pos < trace.size())
+    {
+        costs = std::numeric_limits<int>::max();
+    }
+
     // special case for binary sequence operator (common case optimization)
     if (numChildren == 2)
     {
-        int costs = std::numeric_limits<int>::max();
-        // remove elements that are not in the subtree
-        // TODO this way the trace always has to be recomputed? maybe there could be a more efficient solution
         std::shared_ptr<IntVec> prunedTrace = pruneTrace(children, trace);
         auto prunedTraceSpan = std::span<const int>(*prunedTrace);
 
@@ -131,6 +158,10 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, std::span<const int> trace)
             auto secondPart = prunedTraceSpan.subspan(split, prunedN - split);
 
             auto leftCost = dynAlign(children[0], firstPart) + aliens;
+            if (leftCost >= costs)
+            {
+                continue;
+            }
             auto rightCost = dynAlign(children[1], secondPart);
 
             costs = std::min(leftCost + rightCost, costs);
@@ -180,9 +211,12 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, std::span<const int> trace)
                 current = v;
             }
         }
+        // TODO is it possible to just stop the while loop if dijkstraCosts[current] > costs
+        // because its already larger than the upper bound?
+        // test once with more computation available
         visited[current] = true;
 
-        for (auto edge : outgoingEdges(current, trace, node))
+        for (auto edge : outgoingEdges(current, trace, node, costs))
         {
             if (dijkstraCosts[current] != std::numeric_limits<int>::max())
             {
