@@ -278,7 +278,7 @@ int dynAlignXor(std::shared_ptr<TreeNode> node, std::span<const int> trace)
 // update this to work more as a lower bound
 float estimateEdgeCost(IntPair edge, std::span<const int> trace, std::shared_ptr<TreeNode> node)
 {
-    const auto& activities = node->getActivities();
+    const auto &activities = node->getActivities();
     int commonActivities = 0;
 
     for (int i = edge.first; i < edge.second; i++)
@@ -316,7 +316,7 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, std::span<const int> trace)
 
     std::unordered_map<IntPair, int, PairHash> qrCosts;
     int upperBound = std::numeric_limits<int>::max();
-    
+
     std::stack<IntPair> stack;
     for (size_t i = 0; i <= n; i++)
     {
@@ -350,15 +350,17 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, std::span<const int> trace)
             }
 
             int edgesCost;
-            if (edge.second == edge.first) {
+            if (edge.second == edge.first)
+            {
                 // Empty segment case
                 edgesCost = prevEdgesCost;
-            } else {
+            }
+            else
+            {
                 // Calculate alignment cost for this segment
                 edgesCost = prevEdgesCost + dynAlign(
-                    tempNode, 
-                    trace.subspan(edge.first, edge.second - edge.first)
-                );
+                                                tempNode,
+                                                trace.subspan(edge.first, edge.second - edge.first));
             }
 
             if (edgesCost >= upperBound)
@@ -380,29 +382,26 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, std::span<const int> trace)
             }
             else
             {
-                // calculate outgoing edges
-                float bestHeuristic = -1.0;
-                IntPair bestEdge;
+                std::vector<std::pair<float, IntPair>> edgeScores;
+                edgeScores.reserve(n - totalEdge.second);
+
                 for (int i = totalEdge.second + 1; i <= n; i++)
                 {
                     IntPair newEdge(totalEdge.second, i);
                     float estimate = estimateEdgeCost(newEdge, trace, tempNode);
-                    // perhaps sort them, not only get the best one??
-                    if (estimate > bestHeuristic)
-                    {
-                        if (bestHeuristic != -1.0)
-                        {
-                            stack.push(bestEdge);
-                        }
-                        bestHeuristic = estimate;
-                        bestEdge = newEdge;
-                    }
-                    else
-                    {
-                        stack.push(newEdge);
-                    }
+                    edgeScores.emplace_back(estimate, newEdge);
                 }
-                stack.push(bestEdge);
+
+                std::sort(edgeScores.begin(), edgeScores.end(),
+                          [](const auto &a, const auto &b)
+                          {
+                              return a.first > b.first;
+                          });
+
+                for (const auto &edgeScore : edgeScores)
+                {
+                    stack.push(edgeScore.second);
+                }
             }
         }
     }
