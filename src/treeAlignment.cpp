@@ -15,20 +15,11 @@ using StringVec = std::vector<std::string>;
 using IntVec = std::vector<int>;
 using IntPair = std::pair<int, int>;
 
-template <typename T1, typename T2>
-std::ostream &operator<<(std::ostream &os, const std::pair<T1, T2> &p)
-{
-    os << "(" << p.first << ", " << p.second << ")";
-    return os;
-}
-
 // Forward declaration necessary in C++ (unlike Python where functions can be called before definition)
 int dynAlign(std::shared_ptr<TreeNode> node, std::span<const int> trace);
 
-// Implements _dyn_align_sequence from Python with C++ idioms
 std::vector<IntPair> outgoingEdges(IntPair &vertex, std::shared_ptr<TreeNode> node, IntVec &splitPositions)
 {
-    // std::cout << "outgoing edges" << std::endl;
     std::vector<IntPair> result;
     int numChild = node->getChildren().size();
 
@@ -43,13 +34,13 @@ std::vector<IntPair> outgoingEdges(IntPair &vertex, std::shared_ptr<TreeNode> no
         return result;
     }
 
+    // use binary search to find start where elements are bigger than
+    auto it = std::lower_bound(splitPositions.begin(), splitPositions.end(), vertex.second);
+
     // TODO: later use heuristic to sort this order
-    for (const int val : splitPositions)
+    for (; it != splitPositions.end(); ++it)
     {
-        if (val >= vertex.second)
-        {
-            result.push_back({vertex.first + 1, val});
-        }
+        result.push_back({vertex.first + 1, *it});
     }
 
     return result;
@@ -57,14 +48,10 @@ std::vector<IntPair> outgoingEdges(IntPair &vertex, std::shared_ptr<TreeNode> no
 
 int dynAlignSequence(std::shared_ptr<TreeNode> node, std::span<const int> trace)
 {
-    // std::cout << "align sequence" << std::endl;
-    // std::cout << "num children: " << node->getChildren().size() << std::endl;
-    // std::cout << "lenght of trace: " << trace.size() << std::endl;
     const auto &children = node->getChildren();
     const int childCount = children.size();
     const int traceLength = trace.size();
 
-    // std::cout << "activity to child" << std::endl;
     std::unordered_map<int, int> activityToChildIndex;
     int childIndex = 0;
     for (const auto &child : children)
@@ -76,7 +63,6 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, std::span<const int> trace)
         ++childIndex;
     }
 
-    // std::cout << "splitpositions" << std::endl;
     std::vector<int> splitPositions = {0};
     for (int i = 1; i < traceLength; i++)
     {
@@ -87,16 +73,12 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, std::span<const int> trace)
     }
     splitPositions.push_back(traceLength);
 
-    // std::vector<IntPair> vertices;
-
-    // std::cout << "vertices" << std::endl;
     std::unordered_map<IntPair, int, PairHash> vertexCosts;
     for (int i = 0; i < childCount - 1; i++)
     {
         for (const auto splitPosition : splitPositions)
         {
             IntPair vertex = {i, splitPosition};
-            // vertices.push_back(vertex);
             vertexCosts[vertex] = std::numeric_limits<int>::max();
         }
     }
@@ -105,28 +87,23 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, std::span<const int> trace)
     const IntPair startVertex = {-1, 0};
     vertexCosts[startVertex] = 0;
     vertexCosts[finalVertex] = std::numeric_limits<int>::max();
-    // vertices.push_back(finalVertex);
 
     std::stack<IntPair> stack;
-    std::unordered_map<IntPair, IntPair, PairHash> predecessors;
+    std::unordered_map<IntPair, IntPair, PairHash> prevVertices;
 
-    // std::cout << "init predecessors" << std::endl;
     for (const int splitPosition : splitPositions)
     {
         IntPair initialVertex = {0, splitPosition};
         stack.push(initialVertex);
-        predecessors[initialVertex] = startVertex;
+        prevVertices[initialVertex] = startVertex;
     }
 
-    // std::cout << "dfs" << std::endl;
     int bestCost = std::numeric_limits<int>::max();
     while (!stack.empty())
     {
-        // std::cout << "enter loop" << std::endl;
         IntPair currVertex = stack.top();
         stack.pop();
-        IntPair prevVertex = predecessors[currVertex];
-        // std::cout << "prev vertex " << prevVertex << " cur vertex " << currVertex << std::endl;
+        IntPair prevVertex = prevVertices[currVertex];
 
         int tempCost;
         if (prevVertex.first == -1)
@@ -139,32 +116,23 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, std::span<const int> trace)
         }
 
         int newCost = tempCost + vertexCosts[prevVertex];
-        // std::cout << "new cost " << newCost << " prev vertex cost " << vertexCosts[prevVertex] << " temp cost " << tempCost << std::endl;
         if (newCost >= bestCost || newCost >= vertexCosts[currVertex])
         {
-            // std::cout << "continue because newCost to high" << std::endl << std::endl;
             continue;
         }
         vertexCosts[currVertex] = newCost;
 
-        // are we calculating the costs
         if (currVertex == finalVertex)
         {
-            // std::cout << "reassignment of bestcost to: " << newCost << std::endl << std::endl;
             bestCost = newCost;
             continue;
         }
 
-        // std::cout << "calculating next edges of " << currVertex << std::endl;
         for (const auto &nextEdge : outgoingEdges(currVertex, node, splitPositions))
         {
-            // std::cout << nextEdge << " ";
-            predecessors[nextEdge] = currVertex;
+            prevVertices[nextEdge] = currVertex;
             stack.push(nextEdge);
         }
-        // std::cout << std::endl << std::endl;
-
-        // std::cout << "end iterations" << std::endl;
     }
 
     return bestCost;
