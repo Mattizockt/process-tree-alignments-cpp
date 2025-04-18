@@ -52,6 +52,13 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, std::span<const int> trace)
     const int childCount = children.size();
     const int traceLength = trace.size();
 
+    if (traceLength == 0)
+    {
+        // C++ uses std::accumulate with lambda instead of Python's sum() with list comprehension
+        return std::accumulate(children.begin(), children.end(), 0, [&trace](int sum, const auto &child)
+                               { return sum + dynAlign(child, trace); });
+    }
+    
     std::unordered_map<int, int> activityToChildIndex;
     int childIndex = 0;
     for (const auto &child : children)
