@@ -187,7 +187,7 @@ def compare_output(paths: list[str], numData: int = 35):
 
 
 # read in output and plot it on graph
-def summarize_output(paths: list[str], names: list[str], numData: int = 35):
+def summarize_output(paths: list[str], names : list[str], numData: int = 35):
     # Initialize the figure once, outside the loop
     plt.figure(figsize=(10, 6))
 
@@ -245,7 +245,9 @@ def summarize_output(paths: list[str], names: list[str], numData: int = 35):
     for i, data in enumerate(graphs):
         x_values = np.arange(len(data))
         color = colors[i % len(colors)]
-        plt.plot(x_values, data, color=color, linewidth=2, marker="o", label=names[i])
+        plt.plot(
+            x_values, data, color=color, linewidth=2, marker="o", label=names[i]
+        )
 
     # Add labels and styling
     plt.xlabel("Position (i)")
