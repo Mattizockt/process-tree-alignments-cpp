@@ -18,10 +18,10 @@ using IntPair = std::pair<int, int>;
 // Forward declaration necessary in C++ (unlike Python where functions can be called before definition)
 const size_t dynAlign(std::shared_ptr<TreeNode> node, const std::span<const int> trace);
 
-std::vector<IntPair> outgoingEdges(IntPair &vertex, std::shared_ptr<TreeNode> node, IntVec &splitPositions)
+std::vector<IntPair> outgoingEdges(const IntPair &vertex, std::shared_ptr<TreeNode> node, std::vector<size_t> &splitPositions)
 {
     std::vector<IntPair> result;
-    int numChild = node->getChildren().size();
+    size_t const numChild = node->getChildren().size();
 
     if (vertex.first >= numChild - 1)
     {
@@ -46,7 +46,8 @@ std::vector<IntPair> outgoingEdges(IntPair &vertex, std::shared_ptr<TreeNode> no
     return result;
 }
 
-int dynAlignSequence(std::shared_ptr<TreeNode> node, std::span<const int> trace)
+// Implements _dyn_align_sequence from Python with C++ idioms
+const int dynAlignSequence(const std::shared_ptr<TreeNode> node, const std::span<const int> trace)
 {
     const auto &children = node->getChildren();
     const int childCount = children.size();
@@ -59,19 +60,19 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, std::span<const int> trace)
                                { return sum + dynAlign(child, trace); });
     }
     
-    std::unordered_map<int, int> activityToChildIndex;
-    int childIndex = 0;
+    std::unordered_map<int, size_t> activityToChildIndex;
+    size_t childIndex = 0;
     for (const auto &child : children)
     {
-        for (const auto &[activity, _] : child->getActivities())
+        for (const auto activity : child->getActivities())
         {
             activityToChildIndex[activity] = childIndex;
         }
         ++childIndex;
     }
 
-    std::vector<int> splitPositions = {0};
-    for (int i = 1; i < traceLength; i++)
+    std::vector<size_t> splitPositions = {0};
+    for (size_t i = 1; i < traceLength; i++)
     {
         if (activityToChildIndex[trace[i]] != activityToChildIndex[trace[i - 1]])
         {
@@ -80,39 +81,39 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, std::span<const int> trace)
     }
     splitPositions.push_back(traceLength);
 
-    std::unordered_map<IntPair, int, PairHash> vertexCosts;
-    for (int i = 0; i < childCount - 1; i++)
+    std::unordered_map<IntPair, size_t, PairHash> vertexCosts;
+    for (size_t i = 0; i < childCount - 1; i++)
     {
         for (const auto splitPosition : splitPositions)
         {
-            IntPair vertex = {i, splitPosition};
-            vertexCosts[vertex] = std::numeric_limits<int>::max();
+            const IntPair vertex = {i, splitPosition};
+            vertexCosts[vertex] = std::numeric_limits<size_t>::max();
         }
     }
 
     const IntPair finalVertex = {childCount - 1, splitPositions.back()};
     const IntPair startVertex = {-1, 0};
     vertexCosts[startVertex] = 0;
-    vertexCosts[finalVertex] = std::numeric_limits<int>::max();
+    vertexCosts[finalVertex] = std::numeric_limits<size_t>::max();
 
     std::stack<IntPair> stack;
     std::unordered_map<IntPair, IntPair, PairHash> prevVertices;
 
-    for (const int splitPosition : splitPositions)
+    for (const size_t splitPosition : splitPositions)
     {
-        IntPair initialVertex = {0, splitPosition};
+        const IntPair initialVertex = {0, splitPosition};
         stack.push(initialVertex);
         prevVertices[initialVertex] = startVertex;
     }
 
-    int bestCost = std::numeric_limits<int>::max();
+    size_t bestCost = std::numeric_limits<size_t>::max();
     while (!stack.empty())
     {
-        IntPair currVertex = stack.top();
+        const IntPair currVertex = stack.top();
         stack.pop();
-        IntPair prevVertex = prevVertices[currVertex];
+        const IntPair prevVertex = prevVertices[currVertex];
 
-        int tempCost;
+        size_t tempCost;
         if (prevVertex.first == -1)
         {
             tempCost = dynAlign(children[currVertex.first], trace.subspan(0, currVertex.second));
@@ -122,7 +123,7 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, std::span<const int> trace)
             tempCost = dynAlign(children[currVertex.first], trace.subspan(prevVertex.second, currVertex.second - prevVertex.second));
         }
 
-        int newCost = tempCost + vertexCosts[prevVertex];
+        const size_t newCost = tempCost + vertexCosts[prevVertex];
         if (newCost >= bestCost || newCost >= vertexCosts[currVertex])
         {
             continue;
