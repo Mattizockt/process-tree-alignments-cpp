@@ -4,6 +4,6 @@
 #include <memory>
 #include <span>
 
-int dynAlign(std::shared_ptr<TreeNode> node, std::span<const int> trace);
+const size_t dynAlign(std::shared_ptr<TreeNode> node, const std::span<const int> trace);
 
 #endif // TREENODE_H
