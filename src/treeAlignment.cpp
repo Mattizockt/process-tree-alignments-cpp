@@ -352,35 +352,6 @@ const size_t dynAlignLoop(const std::shared_ptr<TreeNode> node, const std::span<
                 IntPair bestEdge;
                 for (size_t i = totalEdge.second + 1; i <= n; i++)
                 {
-                    optimalCost = newCost;
-                    change = true;
-                }
-            }
-            qrCosts[edge] = optimalCost;
-        }
-        if (!change)
-        {
-            break;
-        }
-    }
-
-    std::unordered_map<size_t, size_t> rCosts(n);
-    for (size_t i = 0; i <= n; i++)
-    {
-        rCosts[i] = dynAlign(children[0], trace.subspan(0, i));
-    }
-
-    size_t minimalCosts = std::numeric_limits<size_t>::max();
-    for (size_t i = 0; i <= n; i++)
-    {
-        const size_t costs = rCosts[i] + qrCosts[{i, n}];
-        if (costs < minimalCosts)
-        {
-            minimalCosts = costs;
-        }
-    }
-
-    return minimalCosts;
                     IntPair newEdge(totalEdge.second, i);
                     const float estimate = estimateEdgeCost(newEdge, trace, tempNode);
                     // perhaps sort them, not only get the best one??
