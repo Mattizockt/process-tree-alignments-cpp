@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <string>
+#include <unordered_set>
 #include <unordered_map>
 #include <vector>
 #include <span>
@@ -78,38 +79,38 @@ enum Operation
 class TreeNode
 {
 public:
-    TreeNode();
+    // TreeNode();
     TreeNode(Operation operation);
     TreeNode(Operation operation, int activity);
     TreeNode(Operation operation, int activity, std::string id);
 
-    static int
-    getNumberOfNodes();
+    // static int
+    // getNumberOfNodes();
 
     std::string getId() const;
-    void setId(std::string newId);
+    // void setId(std::string newId);
 
     Operation getOperation() const;
-    void setOperation(Operation newOperation);
+    // void setOperation(Operation newOperation);
 
     int getActivity() const;
 
-    std::unordered_map<int, bool> &getActivities();
+    const std::unordered_set<int> &getActivities() const;
 
     void addChild(std::shared_ptr<TreeNode> child);
 
-    std::vector<std::shared_ptr<TreeNode>> &getChildren();
+    const std::vector<std::shared_ptr<TreeNode>> &getChildren() const;
 
     void fillActivityMaps();
 
-    void printTree(int level = 0);
+    // void printTree(int level = 0);
 
 private:
     static int numberOfNodes;
     std::string id;
     Operation operation;
     int activity;
-    std::unordered_map<int, bool> activities;
+    std::unordered_set<int> activities;
     std::vector<std::shared_ptr<TreeNode>> children;
 };
 
