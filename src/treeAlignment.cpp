@@ -282,12 +282,12 @@ const size_t dynAlignLoop(const std::shared_ptr<TreeNode> node, const std::span<
     tempNode->addChild(children[0]);
 
     std::unordered_map<IntPair, int, PairHash> qrCosts;
-    int upperBound = std::numeric_limits<int>::max();
+    size_t upperBound = std::numeric_limits<size_t>::max();
     
     std::stack<IntPair> stack;
     for (size_t i = 0; i <= n; i++)
     {
-        int rCost = dynAlign(children[0], trace.subspan(0, i));
+        const size_t rCost = dynAlign(children[0], trace.subspan(0, i));
 
         stack.push(IntPair(i, i));
         bool firstStackElement = true;
@@ -300,7 +300,7 @@ const size_t dynAlignLoop(const std::shared_ptr<TreeNode> node, const std::span<
             IntPair startEdge(0, edge.first);
             IntPair totalEdge(0, edge.second);
 
-            int prevEdgesCost;
+            size_t prevEdgesCost;
             if (firstStackElement)
             {
                 prevEdgesCost = rCost;
@@ -316,7 +316,7 @@ const size_t dynAlignLoop(const std::shared_ptr<TreeNode> node, const std::span<
                 continue;
             }
 
-            int edgesCost;
+            size_t edgesCost;
             if (edge.second == edge.first) {
                 // Empty segment case
                 edgesCost = prevEdgesCost;
@@ -333,7 +333,7 @@ const size_t dynAlignLoop(const std::shared_ptr<TreeNode> node, const std::span<
                 continue;
             }
 
-            auto existingEdge = qrCosts.find(totalEdge);
+            const auto existingEdge = qrCosts.find(totalEdge);
             if (existingEdge != qrCosts.end() && edgesCost >= existingEdge->second)
             {
                 continue;
@@ -350,7 +350,7 @@ const size_t dynAlignLoop(const std::shared_ptr<TreeNode> node, const std::span<
                 // calculate outgoing edges
                 float bestHeuristic = -1.0;
                 IntPair bestEdge;
-                for (int i = totalEdge.second + 1; i <= n; i++)
+                for (size_t i = totalEdge.second + 1; i <= n; i++)
                 {
                     optimalCost = newCost;
                     change = true;
@@ -382,7 +382,7 @@ const size_t dynAlignLoop(const std::shared_ptr<TreeNode> node, const std::span<
 
     return minimalCosts;
                     IntPair newEdge(totalEdge.second, i);
-                    float estimate = estimateEdgeCost(newEdge, trace, tempNode);
+                    const float estimate = estimateEdgeCost(newEdge, trace, tempNode);
                     // perhaps sort them, not only get the best one??
                     if (estimate > bestHeuristic)
                     {
