@@ -15,6 +15,41 @@ using StringVec = std::vector<std::string>;
 using IntVec = std::vector<int>;
 using IntPair = std::pair<int, int>;
 
+// Helper function to get segments - analogous to get_segments_for_sequence in Python
+const std::vector<IntPair> getSegments(const std::span<const int> trace, std::shared_ptr<TreeNode> node)
+{
+    const auto &children = node->getChildren();
+    if (children.size() != 2)
+    {
+        throw std::runtime_error("get_segments_for_sequence not implemented for more/less than two children.");
+    }
+
+    const size_t traceSize = trace.size();
+    std::vector<IntPair> segments = {
+        {0, traceSize},
+        {traceSize, 0}};
+
+    IntVec splitPositions;
+    const auto leftActivities = children[0]->getActivities();
+    const auto rightActivities = children[1]->getActivities();
+
+    for (size_t i = 1; i < traceSize; i++)
+    {
+        if (rightActivities.count(trace[i]) &&
+            leftActivities.count(trace[i - 1]))
+        {
+            splitPositions.push_back(i);
+        }
+    }
+
+    for (const auto splitPosition : splitPositions)
+    {
+        segments.push_back({splitPosition, traceSize - splitPosition});
+    }
+
+    return segments;
+}
+
 // Forward declaration necessary in C++ (unlike Python where functions can be called before definition)
 const size_t dynAlign(std::shared_ptr<TreeNode> node, const std::span<const int> trace);
 
@@ -58,6 +93,36 @@ const int dynAlignSequence(const std::shared_ptr<TreeNode> node, const std::span
         // C++ uses std::accumulate with lambda instead of Python's sum() with list comprehension
         return std::accumulate(children.begin(), children.end(), 0, [&trace](size_t sum, const auto &child)
                                { return sum + dynAlign(child, trace); });
+    }
+
+    if (childCount == 1)
+    {
+        return dynAlign(children[0], trace);
+    } 
+    else if (childCount == 2)
+    {
+        size_t costs = std::numeric_limits<size_t>::max();
+        // remove elements that are not in the subtree
+        // TODO this way the trace always has to be recomputed? maybe there could be a more efficient solution
+        const std::shared_ptr<IntVec> prunedTrace = pruneTrace(children, trace);
+        const auto prunedTraceSpan = std::span<const int>(*prunedTrace);
+
+        const size_t prunedN = prunedTraceSpan.size();
+        const size_t aliens = traceLength - prunedN;
+
+        const auto segments = getSegments(prunedTraceSpan, node);
+        for (const auto segment : segments)
+        {
+            const int split = segment.first;
+            const auto firstPart = prunedTraceSpan.subspan(0, split);
+            const auto secondPart = prunedTraceSpan.subspan(split, prunedN - split);
+
+            const auto leftCost = dynAlign(children[0], firstPart) + aliens;
+            const auto rightCost = dynAlign(children[1], secondPart);
+
+            costs = std::min(leftCost + rightCost, costs);
+        }
+        return costs;
     }
     
     std::unordered_map<int, size_t> activityToChildIndex;
