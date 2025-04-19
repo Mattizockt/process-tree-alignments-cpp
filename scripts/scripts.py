@@ -187,7 +187,7 @@ def compare_output(paths: list[str], numData: int = 35):
 
 
 # read in output and plot it on graph
-def summarize_output(paths: list[str], numData: int = 35):
+def summarize_output(paths: list[str], names : list[str], numData: int = 35):
     # Initialize the figure once, outside the loop
     plt.figure(figsize=(10, 6))
 
@@ -219,13 +219,13 @@ def summarize_output(paths: list[str], numData: int = 35):
         minutes = miliseconds // 60000
         minute_seconds = (miliseconds % 60000) / 1000
 
-        seconds = miliseconds / 3600
+        seconds = miliseconds / 1000
 
         print(
-            f"Graph {i+1} has the total duration of : {minutes} minutes and {minute_seconds} seconds"
+            f"Graph {names[i]} has the total duration of : {minutes} minutes and {minute_seconds} seconds"
         )
         print(
-            f"Graph {i+1} has the an average duration of : {seconds / len(graphs[i])} seconds"
+            f"Graph {names[i]} has the an average duration of : {seconds / len(graphs[i])} seconds"
         )
 
     # Plot all graphs on the same figure
@@ -233,7 +233,7 @@ def summarize_output(paths: list[str], numData: int = 35):
         x_values = np.arange(len(data))
         color = colors[i % len(colors)]
         plt.plot(
-            x_values, data, color=color, linewidth=2, marker="o", label=f"Graph {i+1}"
+            x_values, data, color=color, linewidth=2, marker="o", label=names[i]
         )
 
     # Add labels and styling
@@ -247,13 +247,21 @@ def summarize_output(paths: list[str], numData: int = 35):
 
 
 paths = [
-    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/double/BPI_Challenge_2012_pt50.ptml/costs.csv",
-    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/with_vector/BPI_Challenge_2012_pt50.ptml/costs.csv",
-    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/without_vector/BPI_Challenge_2012_pt50.ptml/costs.csv",
+    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/sequence-improvement/BPI_Challenge_2012_pt50.ptml/times.csv",
+    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/baseline/BPI_Challenge_2012_pt50.ptml/times.csv",
+    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/upper_bounds/BPI_Challenge_2012_pt50.ptml/times.csv",
+    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/low_bound/BPI_Challenge_2012_pt50.ptml/times.csv",
+    # "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/without_vector/BPI_Challenge_2012_pt50.ptml/costs.csv",
 ]
 
-# summarize_output(paths)
-compare_output(paths)
+names = [ 
+    "sequence-improvement",
+    "baseline",
+    "upper_bounds",
+    "low_bound",
+]
+
+summarize_output(paths, names, 105)
 
 # create_ptml()
 visualize_tree("./data/ptml/BPI_Challenge_2012_pt50.ptml")

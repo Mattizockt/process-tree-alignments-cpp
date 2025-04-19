@@ -78,14 +78,14 @@ void printNestedVector(const std::vector<std::shared_ptr<std::vector<std::string
     std::cout << "]\n";
 }
 
-std::shared_ptr<IntVec> pruneTrace(const std::vector<std::shared_ptr<TreeNode>> &nodes, std::span<const int> unprunedTrace)
+std::shared_ptr<IntVec> pruneTrace(const std::vector<std::shared_ptr<TreeNode>> &nodes, const std::span<const int> unprunedTrace)
 {
     std::unordered_set<int> nodeLetters;
     for (const auto &node : nodes)
     {
-        for (const auto &pair : node->getActivities())
+        for (const auto activity : node->getActivities())
         {
-            nodeLetters.insert(pair.first);
+            nodeLetters.insert(activity);
         }
     }
 
@@ -125,7 +125,7 @@ std::string visualizeIntTrace(const std::vector<int> &vec)
     return result;
 }
 
-std::string visualizeSpanTrace(std::span<const int> span)
+std::string visualizeSpanTrace(const std::span<const int> span)
 {
     std::string result = "\"(";
     for (size_t i = 0; i < span.size(); ++i)

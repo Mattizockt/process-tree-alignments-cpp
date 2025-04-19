@@ -16,27 +16,27 @@ using IntVec = std::vector<int>;
 using IntPair = std::pair<int, int>;
 
 // Forward declaration necessary in C++ (unlike Python where functions can be called before definition)
-int dynAlign(std::shared_ptr<TreeNode> node, std::span<const int> trace);
+const size_t dynAlign(std::shared_ptr<TreeNode> node, const std::span<const int> trace);
 
 // Helper function to get segments - analogous to get_segments_for_sequence in Python
-std::vector<IntPair> getSegmentsForSequence(std::span<const int> trace, std::shared_ptr<TreeNode> node)
+const std::vector<IntPair> getSegmentsForSequence(const std::span<const int> trace, std::shared_ptr<TreeNode> node)
 {
-    auto &children = node->getChildren();
+    const auto &children = node->getChildren();
     if (children.size() != 2)
     {
         throw std::runtime_error("get_segments_for_sequence not implemented for more/less than two children.");
     }
 
-    int traceSize = trace.size();
+    const size_t traceSize = trace.size();
     std::vector<IntPair> segments = {
         {0, traceSize},
         {traceSize, 0}};
 
     IntVec splitPositions;
-    auto leftActivities = children[0]->getActivities();
-    auto rightActivities = children[1]->getActivities();
+    const auto leftActivities = children[0]->getActivities();
+    const auto rightActivities = children[1]->getActivities();
 
-    for (int i = 1; i < traceSize; i++)
+    for (size_t i = 1; i < traceSize; i++)
     {
         if (rightActivities.count(trace[i]) &&
             leftActivities.count(trace[i - 1]))
@@ -69,11 +69,11 @@ struct PairCost
 
 // Generates outgoing edges for Dijkstra algorithm
 // analogous to Python version
-std::vector<PairCost> outgoingEdges(IntPair v, std::span<const int> trace, std::shared_ptr<TreeNode> node)
+const std::vector<PairCost> outgoingEdges(const IntPair v, const std::span<const int> trace, std::shared_ptr<TreeNode> node)
 {
-    int n = trace.size();
-    auto &children = node->getChildren();
-    int numChild = children.size();
+    const size_t n = trace.size();
+    const auto &children = node->getChildren();
+    const size_t numChild = children.size();
 
     std::vector<PairCost> result;
     if (v.first == numChild)
@@ -90,48 +90,48 @@ std::vector<PairCost> outgoingEdges(IntPair v, std::span<const int> trace, std::
         {
             continue;
         }
-        auto subTrace = trace.subspan(v.second, k - v.second);
-        int tempCost = dynAlign(children.at(v.first), subTrace);
+        const auto subTrace = trace.subspan(v.second, k - v.second);
+        const int tempCost = dynAlign(children.at(v.first), subTrace);
         result.push_back(PairCost(IntPair(v.first, v.second), IntPair(v.first + 1, k), tempCost));
     }
     return result;
 }
 
 // Implements _dyn_align_sequence from Python with C++ idioms
-int dynAlignSequence(std::shared_ptr<TreeNode> node, std::span<const int> trace)
+const int dynAlignSequence(const std::shared_ptr<TreeNode> node, const std::span<const int> trace)
 {
-    int n = trace.size();
+    const size_t n = trace.size();
     const auto &children = node->getChildren();
-    int numChildren = children.size();
+    const size_t numChildren = children.size();
 
     if (n == 0)
     {
         // C++ uses std::accumulate with lambda instead of Python's sum() with list comprehension
-        return std::accumulate(children.begin(), children.end(), 0, [&trace](int sum, const auto &child)
+        return std::accumulate(children.begin(), children.end(), 0, [&trace](size_t sum, const auto &child)
                                { return sum + dynAlign(child, trace); });
     }
 
     // special case for binary sequence operator (common case optimization)
     if (numChildren == 2)
     {
-        int costs = std::numeric_limits<int>::max();
+        size_t costs = std::numeric_limits<size_t>::max();
         // remove elements that are not in the subtree
         // TODO this way the trace always has to be recomputed? maybe there could be a more efficient solution
-        std::shared_ptr<IntVec> prunedTrace = pruneTrace(children, trace);
-        auto prunedTraceSpan = std::span<const int>(*prunedTrace);
+        const std::shared_ptr<IntVec> prunedTrace = pruneTrace(children, trace);
+        const auto prunedTraceSpan = std::span<const int>(*prunedTrace);
 
-        int prunedN = prunedTraceSpan.size();
-        int aliens = n - prunedN;
+        const size_t prunedN = prunedTraceSpan.size();
+        const size_t aliens = n - prunedN;
 
-        auto segments = getSegmentsForSequence(prunedTraceSpan, node);
+        const auto segments = getSegmentsForSequence(prunedTraceSpan, node);
         for (const auto segment : segments)
         {
-            int split = segment.first;
-            auto firstPart = prunedTraceSpan.subspan(0, split);
-            auto secondPart = prunedTraceSpan.subspan(split, prunedN - split);
+            const int split = segment.first;
+            const auto firstPart = prunedTraceSpan.subspan(0, split);
+            const auto secondPart = prunedTraceSpan.subspan(split, prunedN - split);
 
-            auto leftCost = dynAlign(children[0], firstPart) + aliens;
-            auto rightCost = dynAlign(children[1], secondPart);
+            const auto leftCost = dynAlign(children[0], firstPart) + aliens;
+            const auto rightCost = dynAlign(children[1], secondPart);
 
             costs = std::min(leftCost + rightCost, costs);
         }
@@ -140,9 +140,9 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, std::span<const int> trace)
 
     std::vector<IntPair> vertices;
 
-    for (int i = 0; i <= numChildren; ++i)
+    for (size_t i = 0; i <= numChildren; ++i)
     {
-        for (int j = 0; j <= n; ++j)
+        for (size_t j = 0; j <= n; ++j)
         {
             if ((i > 0 && i < numChildren) || (i == 0 && j == 0) || (i == numChildren && j == n))
             {
@@ -155,14 +155,14 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, std::span<const int> trace)
     IntPair end(numChildren, n);
 
     // Using unordered_map with custom hash for pair keys (would be simple dict in Python)
-    std::unordered_map<IntPair, int, PairHash> dijkstraCosts;
+    std::unordered_map<IntPair, size_t, PairHash> dijkstraCosts;
 
     for (const auto vertex : vertices)
     {
-        dijkstraCosts[vertex] = std::numeric_limits<int>::max();
+        dijkstraCosts[vertex] = std::numeric_limits<size_t>::max();
     }
     dijkstraCosts[start] = 0;
-    std::unordered_map<IntPair, bool, PairHash> visited;
+    std::unordered_set<IntPair, PairHash> visited;
 
     // Dijkstra implementation - note Python would typically use a priority queue
     // right now not very efficient
@@ -170,7 +170,7 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, std::span<const int> trace)
     while (visited.size() < verticesSize)
     {
         IntPair current;
-        int min_cost = std::numeric_limits<int>::max();
+        size_t min_cost = std::numeric_limits<size_t>::max();
 
         for (const auto &v : vertices)
         {
@@ -180,11 +180,11 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, std::span<const int> trace)
                 current = v;
             }
         }
-        visited[current] = true;
+        visited.insert(current);
 
-        for (auto edge : outgoingEdges(current, trace, node))
+        for (const auto edge : outgoingEdges(current, trace, node))
         {
-            if (dijkstraCosts[current] != std::numeric_limits<int>::max())
+            if (dijkstraCosts[current] != std::numeric_limits<size_t>::max())
             {
                 dijkstraCosts[edge.second_pair] = std::min(dijkstraCosts[edge.second_pair], dijkstraCosts[current] + edge.cost);
             }
@@ -195,7 +195,7 @@ int dynAlignSequence(std::shared_ptr<TreeNode> node, std::span<const int> trace)
 }
 
 // Equivalent to Python's _dyn_align_shuffle
-int dynAlignParallel(std::shared_ptr<TreeNode> node, std::span<const int> trace)
+const size_t dynAlignParallel(const std::shared_ptr<TreeNode> node, const std::span<const int> trace)
 {
     const auto &children = node->getChildren();
     // Create vector of empty trace vectors for each child
@@ -204,8 +204,8 @@ int dynAlignParallel(std::shared_ptr<TreeNode> node, std::span<const int> trace)
                   { return IntVec(); });
 
     // Count unmatched activities and assign activities to child subtraces
-    int unmatched = std::count_if(trace.begin(), trace.end(), [&](const int &activity)
-                                  {
+    const int unmatched = std::count_if(trace.begin(), trace.end(), [&](const int &activity)
+                                        {
             for (size_t i = 0; i < children.size(); i++) {
                 if (children[i]->getActivities().count(activity)) {
                     subTraces[i].push_back(activity);
@@ -224,12 +224,12 @@ int dynAlignParallel(std::shared_ptr<TreeNode> node, std::span<const int> trace)
 }
 
 // Equivalent to Python's _dyn_align_xor
-int dynAlignXor(std::shared_ptr<TreeNode> node, std::span<const int> trace)
+const size_t dynAlignXor(const std::shared_ptr<TreeNode> node, const std::span<const int> trace)
 {
-    int minCost = std::numeric_limits<int>::max();
+    size_t minCost = std::numeric_limits<size_t>::max();
     for (const auto &child : node->getChildren())
     {
-        int cost = dynAlign(child, trace);
+        const size_t cost = dynAlign(child, trace);
         if (cost == 0)
         {
             return cost;
@@ -260,15 +260,16 @@ float estimateEdgeCost(IntPair edge, std::span<const int> trace, std::shared_ptr
 
 // Implements _dyn_align_loop from Python using C++ constructs
 // for traces of form R(QR)*
-int dynAlignLoop(std::shared_ptr<TreeNode> node, std::span<const int> trace)
+const size_t dynAlignLoop(const std::shared_ptr<TreeNode> node, const std::span<const int> trace)
 {
     const auto &children = node->getChildren();
+
     if (children.size() != 2)
     {
         throw std::runtime_error("Loop node with id: " + node->getId() + " does not have exactly two children.");
     }
 
-    const int n = trace.size();
+    const size_t n = trace.size();
     if (n == 0)
     {
         return dynAlign(children[0], trace);
@@ -351,6 +352,35 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, std::span<const int> trace)
                 IntPair bestEdge;
                 for (int i = totalEdge.second + 1; i <= n; i++)
                 {
+                    optimalCost = newCost;
+                    change = true;
+                }
+            }
+            qrCosts[edge] = optimalCost;
+        }
+        if (!change)
+        {
+            break;
+        }
+    }
+
+    std::unordered_map<size_t, size_t> rCosts(n);
+    for (size_t i = 0; i <= n; i++)
+    {
+        rCosts[i] = dynAlign(children[0], trace.subspan(0, i));
+    }
+
+    size_t minimalCosts = std::numeric_limits<size_t>::max();
+    for (size_t i = 0; i <= n; i++)
+    {
+        const size_t costs = rCosts[i] + qrCosts[{i, n}];
+        if (costs < minimalCosts)
+        {
+            minimalCosts = costs;
+        }
+    }
+
+    return minimalCosts;
                     IntPair newEdge(totalEdge.second, i);
                     float estimate = estimateEdgeCost(newEdge, trace, tempNode);
                     // perhaps sort them, not only get the best one??
@@ -376,23 +406,23 @@ int dynAlignLoop(std::shared_ptr<TreeNode> node, std::span<const int> trace)
 }
 
 // some event logs use a XorLoop instead of a RedoLoop
-int dynAlignXorLoop(std::shared_ptr<TreeNode> node, std::span<const int> trace)
+const size_t dynAlignXorLoop(const std::shared_ptr<TreeNode> node, const std::span<const int> trace)
 {
     // TODO temporary solution that fits data set redo(child[0], child[1])
     // this representation should be correct:     // sequence(child[0], redo(child[2], sequence(child[1], child[0])))
-    auto &children = node->getChildren();
+    const auto &children = node->getChildren();
 
     auto tempRedoLoop = std::make_shared<TreeNode>(REDO_LOOP);
     tempRedoLoop->addChild(children[0]);
     tempRedoLoop->addChild(children[1]);
 
-    int cost = dynAlignLoop(tempRedoLoop, trace);
+    const size_t cost = dynAlignLoop(tempRedoLoop, trace);
     return cost;
 }
 
 // Activity node alignment - equivalent to _dyn_align_leaf in Python
 // C++ needs to explicitly check if element exists in vector using std::find
-int dynAlignActivity(std::shared_ptr<TreeNode> node, std::span<const int> trace)
+const size_t dynAlignActivity(const std::shared_ptr<TreeNode> node, const std::span<const int> trace)
 {
     const int &activity = node->getActivity();
 
@@ -406,25 +436,25 @@ int dynAlignActivity(std::shared_ptr<TreeNode> node, std::span<const int> trace)
     }
 }
 
-int dynAlignSilentActivity(std::shared_ptr<TreeNode> node, std::span<const int> trace)
+const size_t dynAlignSilentActivity(const std::shared_ptr<TreeNode> node, const std::span<const int> trace)
 {
     return trace.size();
 }
 
-int dynAlign(std::shared_ptr<TreeNode> node, std::span<const int> trace)
+const size_t dynAlign(const std::shared_ptr<TreeNode> node, const std::span<const int> trace)
 {
-    std::string nodeId = node->getId();
+    const std::string nodeId = node->getId();
     if (costTable.count(nodeId) > 0)
     {
         // Use find() with span directly - no conversion to vector needed
-        auto it = costTable[nodeId].find(trace);
+        const auto it = costTable[nodeId].find(trace);
         if (it != costTable[nodeId].end())
         {
             return it->second;
         }
     }
 
-    int costs;
+    size_t costs;
     switch (node->getOperation())
     {
     case SEQUENCE:
@@ -452,7 +482,7 @@ int dynAlign(std::shared_ptr<TreeNode> node, std::span<const int> trace)
         throw std::runtime_error("Unknown node operation: " + std::to_string(node->getOperation()));
     }
 
-    std::vector<int> traceVector(trace.begin(), trace.end());
+    const std::vector<int> traceVector(trace.begin(), trace.end());
     costTable[nodeId][traceVector] = costs;
     return costs;
 }
