@@ -5,3 +5,5 @@ data/xes
 myenv   
 output/
 scripts/__pycache__
+scripts/treenode.egg-info
+scripts/treenode.cpython-312-x86_64-linux-gnu.so
