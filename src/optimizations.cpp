@@ -4,6 +4,11 @@
 #include "treeNode.h"
 #include "treeAlignment.h"
 #include <limits>
+#include <span>
+#include <stack>
+
+using IntPair = std::pair<int, int>;
+using IntVec = std::vector<int>;
 
 /**
  * Enhanced optimization implementation - experimental
@@ -19,13 +24,15 @@
 
 // example: trace [a,c,c,d,g], splits [-1,2,4] yield [[],[a,c,c],[d,g]]
 // put in tree alignment
-std::vector<std::shared_ptr<std::vector<std::string>>> segmentTrace(const std::shared_ptr<std::vector<std::string>> trace, const std::vector<int> &splits)
+using IntVec = std::vector<int>;
+
+std::vector<std::span<const int>> segmentTrace(const std::span<const int> trace, const IntVec &splits)
 {
-    std::vector<std::shared_ptr<std::vector<std::string>>> traceSegments;
+    std::vector<std::span<const int>> traceSegments;
     traceSegments.reserve(splits.size());
 
     int start = 0;
-    const auto &defaultSubtrace = std::make_shared<std::vector<std::string>>(); // Empty segment
+    std::span<const int> defaultSubtrace; // Empty segment
     for (int index : splits)
     {
         if (index == -1 || start > index)
@@ -35,7 +42,7 @@ std::vector<std::shared_ptr<std::vector<std::string>>> segmentTrace(const std::s
         else
         {
             // TODO test
-            traceSegments.emplace_back(std::make_shared<std::vector<std::string>>(trace->begin() + start, trace->begin() + index + 1));
+            traceSegments.emplace_back(trace.subspan(start, index - start + 1));
             start = index + 1;
         }
     }
@@ -45,10 +52,10 @@ std::vector<std::shared_ptr<std::vector<std::string>>> segmentTrace(const std::s
 // helper function to compute possible splits
 void calculatePossibleSplits(
     // perhaps change name childPositions
-    const std::vector<std::vector<int>> &childPositions,
-    std::vector<int> currentSplit,
+    const std::vector<IntVec> &childPositions,
+    IntVec currentSplit,
     int position,
-    std::vector<std::vector<int>> &possibleSplits,
+    std::vector<IntVec> &possibleSplits,
     const int lastPosition)
 {
     // Full segment computed
@@ -97,14 +104,14 @@ void calculatePossibleSplits(
 // suggest where splitting the trace would make sense for children, returns splitting point
 // [a,b,v,d,y,u] that is supposed to be split among two children
 // it returns something like this  [0,5] = [[a], [b,v,d,y,u]] or [-1,5] = [[a, b,v,d,y,u]]
-std::vector<std::vector<int>> generateSplits(const std::shared_ptr<TreeNode> &node, const std::shared_ptr<std::vector<std::string>> trace)
+std::vector<std::vector<int>> generateSplits(const std::shared_ptr<TreeNode> &node, const std::span<const int> trace)
 {
     // maps activity to the child node that contains it
-    std::unordered_map<std::string, std::string> activityChildMap;
+    std::unordered_map<int, std::string> activityChildMap;
     // maps id of a child node to their position in the childrens array
     std::unordered_map<std::string, int> nodeIdPostionMap;
     // maps child to each of the positions in the trace where the next trace element is owned by a different cihld
-    std::vector<std::vector<int>> childPositions(node->getChildren().size());
+    std::vector<IntVec> childPositions(node->getChildren().size());
 
     int count = 0;
     for (const auto &child : node->getChildren())
@@ -145,12 +152,12 @@ std::vector<std::vector<int>> generateSplits(const std::shared_ptr<TreeNode> &no
     return splits;
 }
 
-int oldAlignSequence(std::shared_ptr<TreeNode> node, const std::shared_ptr<std::vector<std::string>> trace)
+int oldAlignSequence(std::shared_ptr<TreeNode> node, std::span<const int> trace)
 {
     // std::cout << "oldsequence" << std::endl;
     int minCosts = std::numeric_limits<int>::max();
 
-    std::vector<std::vector<int>> splits = generateSplits(node, trace);
+    std::vector<IntVec> splits = generateSplits(node, trace);
 
     for (const auto &split : splits)
     {
