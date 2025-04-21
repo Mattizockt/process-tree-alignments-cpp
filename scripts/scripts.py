@@ -247,23 +247,25 @@ def summarize_output(paths: list[str], names : list[str], numData: int = 35):
 
 
 paths = [
-    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/sequence-improvement/BPI_Challenge_2012_pt50.ptml/times.csv",
     "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/baseline/BPI_Challenge_2012_pt50.ptml/times.csv",
-    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/upper_bounds/BPI_Challenge_2012_pt50.ptml/times.csv",
-    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/low_bound/BPI_Challenge_2012_pt50.ptml/times.csv",
+    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/sequence/BPI_Challenge_2012_pt50.ptml/times.csv",
+    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/heuristic_loop/BPI_Challenge_2012_pt50.ptml/times.csv",
+    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/no_heuristic_loop/BPI_Challenge_2012_pt50.ptml/times.csv",
+    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/no_heuristic_loop_greedy/BPI_Challenge_2012_pt50.ptml/times.csv",
     # "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/without_vector/BPI_Challenge_2012_pt50.ptml/costs.csv",
 ]
 
 names = [ 
-    "sequence-improvement",
     "baseline",
-    "upper_bounds",
-    "low_bound",
+    "sequence",
+    "heuristic_loop",
+    "no_heuristic_loop",
+    "no_heuristic_loop_greedy",
 ]
 
 summarize_output(paths, names, 105)
 
 # create_ptml()
-visualize_tree("./data/ptml/BPI_Challenge_2012_pt50.ptml")
+# visualize_tree("./data/ptml/BPI_Challenge_2012_pt50.ptml")
 # visualize_tree("./data/ptml/Road_Traffic_Fine_Management_Process_pt50.ptml")
 # feed_compare_data("output.txt")
