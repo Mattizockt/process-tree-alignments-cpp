@@ -187,12 +187,25 @@ def compare_output(paths: list[str], numData: int = 35):
 
 
 # read in output and plot it on graph
-def summarize_output(paths: list[str], names : list[str], numData: int = 35):
+def summarize_output(paths: list[str], names: list[str], numData: int = 35):
     # Initialize the figure once, outside the loop
     plt.figure(figsize=(10, 6))
 
     # Colors for different lines
-    colors = ["blue", "red", "green", "purple", "orange"]
+    colors = [
+        "blue",
+        "red",
+        "green",
+        "purple",
+        "orange",
+        "cyan",
+        "magenta",
+        "yellow",
+        "brown",
+        "pink",
+        "gray",
+        "olive",
+    ]
 
     # Initialize empty graphs
     graphs = [[] for _ in range(len(paths))]
@@ -232,9 +245,7 @@ def summarize_output(paths: list[str], names : list[str], numData: int = 35):
     for i, data in enumerate(graphs):
         x_values = np.arange(len(data))
         color = colors[i % len(colors)]
-        plt.plot(
-            x_values, data, color=color, linewidth=2, marker="o", label=names[i]
-        )
+        plt.plot(x_values, data, color=color, linewidth=2, marker="o", label=names[i])
 
     # Add labels and styling
     plt.xlabel("Position (i)")
@@ -247,23 +258,26 @@ def summarize_output(paths: list[str], names : list[str], numData: int = 35):
 
 
 paths = [
-    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/sequence-improvement/BPI_Challenge_2012_pt50.ptml/times.csv",
     "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/baseline/BPI_Challenge_2012_pt50.ptml/times.csv",
-    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/upper_bounds/BPI_Challenge_2012_pt50.ptml/times.csv",
-    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/low_bound/BPI_Challenge_2012_pt50.ptml/times.csv",
-    # "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/without_vector/BPI_Challenge_2012_pt50.ptml/costs.csv",
+    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/heuristic_loop/BPI_Challenge_2012_pt50.ptml/times.csv",
+    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/no_heuristic_loop/BPI_Challenge_2012_pt50.ptml/times.csv",
+    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/no_heuristic_loop_greedy/BPI_Challenge_2012_pt50.ptml/times.csv",
+    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/sequence/BPI_Challenge_2012_pt50.ptml/times.csv",
+    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/sequence_no_heuristic_loop/BPI_Challenge_2012_pt50.ptml/times.csv",
 ]
 
-names = [ 
-    "sequence-improvement",
+names = [
     "baseline",
-    "upper_bounds",
-    "low_bound",
+    "heuristic_loop",
+    "no_heuristic_loop",
+    "no_heuristic_loop_greedy",
+    "sequence",
+    "sequence_no_heuristic_loop",
 ]
 
 summarize_output(paths, names, 105)
 
 # create_ptml()
-visualize_tree("./data/ptml/BPI_Challenge_2012_pt50.ptml")
+# visualize_tree("./data/ptml/BPI_Challenge_2012_pt50.ptml")
 # visualize_tree("./data/ptml/Road_Traffic_Fine_Management_Process_pt50.ptml")
 # feed_compare_data("output.txt")
