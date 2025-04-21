@@ -56,84 +56,6 @@ def create_ptml():
                 pm4py.write_ptml(process_tree, str(ptml_file))
 
 
-# This script enhances alignment score data by adding complementary scores from different algorithms
-# After C++ alignment is complete and scores are written to a file, this code adds corresponding
-# A* and approximation algorithm scores for comparison purposes
-def feed_compare_data(output_file: Path):
-    try:
-        with open(output_file, "r", encoding="utf-8") as file:
-            costs = json.load(file)  # Load existing alignment scores from JSON file
-    except (FileNotFoundError, json.JSONDecodeError):
-        costs = (
-            {}
-        )  # Initialize empty dictionary if file doesn't exist or has invalid JSON format
-
-    # Define input/output directory paths
-    ptml_path = Path(
-        "data/ptml"
-    ).resolve()  # Path to process tree models in PTML format
-    xes_path = Path("data/xes").resolve()  # Path to event logs in XES format
-
-    for xes_file in xes_path.glob("*.xes"):
-        if not xes_file.is_file():
-            continue
-        print(f"Processing: {xes_file.stem}")
-        event_log = pm4py.read_xes(str(xes_file))  # Parse XES event log
-        trace_variants = list(
-            zip(*get_variants(event_log, None))
-        )  # Extract trace variants from log
-
-        # Find corresponding PTML files - either direct match or with noise level tags (_pt00, _pt10, etc.)
-        ptml_files = (
-            [f"{xes_file.stem}.ptml"]
-            if (ptml_path / f"{xes_file.stem}.ptml").is_file()
-            else [
-                f"{xes_file.stem}{tag}.ptml"
-                for tag in ["_pt00", "_pt10", "_pt25", "_pt50"]
-                if (ptml_path / f"{xes_file.stem}{tag}.ptml").is_file()
-            ]
-        )
-
-        for ptml_file in ptml_files:
-            process_tree = pm4py.read_ptml(
-                str(ptml_path / ptml_file)
-            )  # Read process tree model
-            accepting_petri_net = process_tree_to_petri_net(
-                process_tree
-            )  # Convert to Petri net
-
-            for i in range(len(trace_variants)):
-                # Initialize nested dictionary structure for this variant if needed
-                costs.setdefault(ptml_file, {}).setdefault(str(i), {}).setdefault(
-                    "adv. dyn. c++",
-                    None,  # C++ alignment score placeholder (populated externally)
-                )
-                costs[ptml_file][str(i)].setdefault(
-                    "a* petri", None
-                )  # A* algorithm score placeholder
-                costs[ptml_file][str(i)].setdefault(
-                    "approx", None
-                )  # Approximation algorithm score placeholder
-
-                # Calculate A* alignment score if not already present
-                if costs[ptml_file][str(i)]["a* petri"] is None:
-                    petri_res = pm4py_align_petri_net(
-                        trace_variants[i][1], *accepting_petri_net
-                    )
-                    costs[ptml_file][str(i)]["a* petri"] = petri_res["cost"]
-
-                # Calculate approximation algorithm score if not already present
-                if costs[ptml_file][str(i)]["approx"] is None:
-                    approx_res = pm4py_align_process_tree(
-                        trace_variants[i][1], process_tree
-                    )
-                    costs[ptml_file][str(i)]["approx"] = approx_res["cost"]
-
-    # Save all updated results back to JSON file with formatting
-    with open(output_file, "w", encoding="utf-8") as file:
-        json.dump(costs, file, indent=4, ensure_ascii=False)
-
-
 # Function to render a process tree from PTML file as a visual diagram
 def visualize_tree(path="./data/ptml/BPI_Challenge_2019_pt00.ptml"):
     from pm4py.visualization.process_tree import visualizer as pt_visualizer
@@ -262,7 +184,3 @@ names = [
 ]
 
 summarize_output(paths, names, 105)
-
-# create_ptml()
-# visualize_tree("./data/ptml/BPI_Challenge_2012_pt00.ptml")
-# feed_compare_data("output.txt")
