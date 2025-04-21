@@ -53,6 +53,41 @@ const std::vector<IntPair> getSegments(const std::span<const int> trace, std::sh
 // Forward declaration necessary in C++ (unlike Python where functions can be called before definition)
 const size_t dynAlign(std::shared_ptr<TreeNode> node, const std::span<const int> trace);
 
+// Helper function to get segments - analogous to get_segments_for_sequence in Python
+const std::vector<IntPair> getSegments(const std::span<const int> trace, std::shared_ptr<TreeNode> node)
+{
+    const auto &children = node->getChildren();
+    if (children.size() != 2)
+    {
+        throw std::runtime_error("get_segments_for_sequence not implemented for more/less than two children.");
+    }
+
+    const size_t traceSize = trace.size();
+    std::vector<IntPair> segments = {
+        {0, traceSize},
+        {traceSize, 0}};
+
+    IntVec splitPositions;
+    const auto leftActivities = children[0]->getActivities();
+    const auto rightActivities = children[1]->getActivities();
+
+    for (size_t i = 1; i < traceSize; i++)
+    {
+        if (rightActivities.count(trace[i]) &&
+            leftActivities.count(trace[i - 1]))
+        {
+            splitPositions.push_back(i);
+        }
+    }
+
+    for (const auto splitPosition : splitPositions)
+    {
+        segments.push_back({splitPosition, traceSize - splitPosition});
+    }
+
+    return segments;
+}
+
 std::vector<IntPair> outgoingEdges(const IntPair &vertex, std::shared_ptr<TreeNode> node, std::vector<size_t> &splitPositions)
 {
     std::vector<IntPair> result;
@@ -71,6 +106,7 @@ std::vector<IntPair> outgoingEdges(const IntPair &vertex, std::shared_ptr<TreeNo
 
     // use binary search to find start where elements are bigger than
     auto it = std::lower_bound(splitPositions.begin(), splitPositions.end(), vertex.second);
+    result.reserve(std::distance(it, splitPositions.end()));
 
     // TODO: later use heuristic to sort this order
     for (; it != splitPositions.end(); ++it)
@@ -82,7 +118,7 @@ std::vector<IntPair> outgoingEdges(const IntPair &vertex, std::shared_ptr<TreeNo
 }
 
 // Implements _dyn_align_sequence from Python with C++ idioms
-const int dynAlignSequence(const std::shared_ptr<TreeNode> node, const std::span<const int> trace)
+const size_t dynAlignSequence(const std::shared_ptr<TreeNode> node, const std::span<const int> trace)
 {
     const auto &children = node->getChildren();
     const int childCount = children.size();
@@ -98,33 +134,36 @@ const int dynAlignSequence(const std::shared_ptr<TreeNode> node, const std::span
     if (childCount == 1)
     {
         return dynAlign(children[0], trace);
-    } 
+    }
     else if (childCount == 2)
     {
-        size_t costs = std::numeric_limits<size_t>::max();
-        // remove elements that are not in the subtree
-        // TODO this way the trace always has to be recomputed? maybe there could be a more efficient solution
-        const std::shared_ptr<IntVec> prunedTrace = pruneTrace(children, trace);
+        size_t upperBound = std::numeric_limits<size_t>::max();
+
+        const auto prunedTrace = pruneTrace(children, trace);
         const auto prunedTraceSpan = std::span<const int>(*prunedTrace);
 
         const size_t prunedN = prunedTraceSpan.size();
         const size_t aliens = traceLength - prunedN;
 
         const auto segments = getSegments(prunedTraceSpan, node);
-        for (const auto segment : segments)
+        for (const auto& [split, _] : segments)
         {
-            const int split = segment.first;
             const auto firstPart = prunedTraceSpan.subspan(0, split);
-            const auto secondPart = prunedTraceSpan.subspan(split, prunedN - split);
-
             const auto leftCost = dynAlign(children[0], firstPart) + aliens;
+
+            if (leftCost >= upperBound)
+            {
+                continue;
+            }
+
+            const auto secondPart = prunedTraceSpan.subspan(split, prunedN - split);
             const auto rightCost = dynAlign(children[1], secondPart);
 
-            costs = std::min(leftCost + rightCost, costs);
+            upperBound = std::min(leftCost + rightCost, upperBound);
         }
-        return costs;
+        return upperBound;
     }
-    
+
     std::unordered_map<int, size_t> activityToChildIndex;
     size_t childIndex = 0;
     for (const auto &child : children)
