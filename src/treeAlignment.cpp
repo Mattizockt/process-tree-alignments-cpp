@@ -17,41 +17,6 @@ using StringVec = std::vector<std::string>;
 using IntVec = std::vector<int>;
 using IntPair = std::pair<int, int>;
 
-// Helper function to get segments - analogous to get_segments_for_sequence in Python
-const std::vector<IntPair> getSegments(const std::span<const int> trace, std::shared_ptr<TreeNode> node)
-{
-    const auto &children = node->getChildren();
-    if (children.size() != 2)
-    {
-        throw std::runtime_error("get_segments_for_sequence not implemented for more/less than two children.");
-    }
-
-    const size_t traceSize = trace.size();
-    std::vector<IntPair> segments = {
-        {0, traceSize},
-        {traceSize, 0}};
-
-    IntVec splitPositions;
-    const auto leftActivities = children[0]->getActivities();
-    const auto rightActivities = children[1]->getActivities();
-
-    for (size_t i = 1; i < traceSize; i++)
-    {
-        if (rightActivities.count(trace[i]) &&
-            leftActivities.count(trace[i - 1]))
-        {
-            splitPositions.push_back(i);
-        }
-    }
-
-    for (const auto splitPosition : splitPositions)
-    {
-        segments.push_back({splitPosition, traceSize - splitPosition});
-    }
-
-    return segments;
-}
-
 // Forward declaration necessary in C++ (unlike Python where functions can be called before definition)
 const size_t dynAlign(std::shared_ptr<TreeNode> node, const std::span<const int> trace);
 
