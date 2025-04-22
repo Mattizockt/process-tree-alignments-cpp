@@ -39,7 +39,7 @@ set(COMMON_SOURCES
 )
 
 # Python module (without main.cpp)
-pybind11_add_module(treenode
+pybind11_add_module(alignment
   src/bindings.cpp  # This should contain only your pybind11 bindings
   ${COMMON_SOURCES}
 )

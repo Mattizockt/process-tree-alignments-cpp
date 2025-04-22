@@ -32,7 +32,7 @@ define_macros = [
 
 ext_modules = [
     Pybind11Extension(
-        "treenode",
+        "alignment",
         sources=source_files,
         include_dirs=include_dirs,
         extra_compile_args=extra_compile_args,
@@ -41,7 +41,7 @@ ext_modules = [
 ]
 
 setup(
-    name="treenode",
+    name="alignment",
     version="0.1.0",
     author="Your Name",
     author_email="your.email@example.com",
