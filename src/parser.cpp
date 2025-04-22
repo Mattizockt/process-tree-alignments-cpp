@@ -24,6 +24,28 @@ std::vector<std::string> activityVector;              // Reverse mapping: intege
 
 // Similiar to the get_variants method from the python implementation
 // removes duplicate traces
+
+IntVec convertStringTrace(const std::vector<std::string> &trace)
+{
+    IntVec intTrace;
+    intTrace.reserve(trace.size());
+
+    for (const auto &activity : trace)
+    {
+        auto it = activitiesToInt.find(activity);
+        if (it != activitiesToInt.end())
+        {
+            intTrace.push_back(it->second);
+        }
+        else
+        {
+            std::cerr << "Activity not found in mapping: " << activity << std::endl;
+        }
+    }
+
+    return intTrace;
+}
+
 std::vector<IntVec> getVariants(const std::vector<IntVec> traces)
 {
     std::unordered_map<std::vector<int>, bool, SpanHash> variantsMap;
@@ -200,14 +222,31 @@ std::shared_ptr<TreeNode> createNode(const std::string &nodeName, rapidxml::xml_
             throw std::runtime_error("Error: Missing 'name' attribute for activity node.");
 
         // Verify activity exists in our mapping
-        if (activitiesToInt.find(nameAttr->value()) != activitiesToInt.end())
+        // originally there to verify that the activity is in the activitiesToInt map
+        // if (activitiesToInt.find(nameAttr->value()) != activitiesToInt.end())
+        // {
+        //     return std::make_shared<TreeNode>(ACTIVITY, activitiesToInt[nameAttr->value()], nodeId);
+        // }
+        // else
+        // {
+        //     throw std::runtime_error("Activity parsed in ptml tree doesn't exist in activitiesToInt map.");
+        // }
+
+        std::string activityName = nameAttr->value();
+        if (activitiesToInt.find(activityName) == activitiesToInt.end())
         {
-            return std::make_shared<TreeNode>(ACTIVITY, activitiesToInt[nameAttr->value()], nodeId);
+            auto [it, inserted] = activitiesToInt.emplace(nameAttr->value(), activitiesToInt.size());
+            if (inserted)
+            {
+                // Store the activity name for reverse lookup
+                activityVector.push_back(activityName);
+            }
+            else
+            {
+                std::cerr << "Error when inserting activity" << nameAttr->value() << " into activitiesToInt map." << std::endl;
+            }
         }
-        else
-        {
-            throw std::runtime_error("Activity parsed in ptml tree doesn't exist in activitiesToInt map.");
-        }
+        return std::make_shared<TreeNode>(ACTIVITY, activitiesToInt[activityName], nodeId);
     }
 
     // For non-activity nodes, use -1 as placeholder for activity ID
@@ -233,7 +272,7 @@ std::shared_ptr<TreeNode> parsePtml(const std::string &filePath)
         throw std::runtime_error("Error: <processTree> node not found.");
     }
 
-    // Get the ID of the root node
+    // Get the ID of the root naode
     rapidxml::xml_attribute<> *rootAttr = processTreeNode->first_attribute("root");
     if (!rootAttr)
     {
@@ -397,7 +436,6 @@ void parseAndAlign(const std::string &xesPath, const std::string &ptmlPath)
                 return;
             }
 
-            int count = 0;
             // Compute alignment cost for each trace
             for (const auto &trace : traces)
             {
@@ -418,8 +456,6 @@ void parseAndAlign(const std::string &xesPath, const std::string &ptmlPath)
                 costFile << cost << ", ";
                 costFile << visualizeIntTrace(trace) << ", ";
                 costFile << std::endl;
-
-                count++;
             }
         }
     }
