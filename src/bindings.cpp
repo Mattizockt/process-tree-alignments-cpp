@@ -29,6 +29,7 @@ size_t AlignmentWrapper::align() const
 {
     std::span<const int> trace = traceContent;
     costTable.clear();
+    a = trace;
     const size_t cost = dynAlign(processTree, trace);
     return cost;
 }

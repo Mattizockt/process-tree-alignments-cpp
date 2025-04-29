@@ -1,0 +1,76 @@
+Node ID: dab5ecb9-154c-45a3-9915-d35eabd48136, Operation: 0, Activity (if exists): None
+  Node ID: 16bf5eb0-eaa2-4ba7-b289-a108b59bf593, Operation: 5, Activity (if exists): A_SUBMITTED
+  Node ID: 65895248-9f22-4229-a54c-054e91deddbf, Operation: 5, Activity (if exists): A_PARTLYSUBMITTED
+  Node ID: e3f44260-38e8-42ea-9cb6-01333abe4198, Operation: 2, Activity (if exists): None
+    Node ID: 8085b042-3ed8-47d1-b1bb-3d0d41abf549, Operation: 6, Activity (if exists): None
+    Node ID: 593c52d9-85a0-4ac0-9478-e924e2e5fd96, Operation: 4, Activity (if exists): None
+      Node ID: 8380e8cf-caa9-43d8-9ace-fd46949b900d, Operation: 5, Activity (if exists): W_Beoordelen fraude
+      Node ID: f2b87716-5013-4368-acc8-5e763033b108, Operation: 6, Activity (if exists): None
+      Node ID: 5ee16ae8-4a4a-472c-98be-7f47f31a5c1c, Operation: 6, Activity (if exists): None
+    Node ID: d805404f-38bc-4a19-88e4-d9b411eb0941, Operation: 4, Activity (if exists): None
+      Node ID: 85b1b70e-5afd-4dd3-8edc-29227b71ce0e, Operation: 0, Activity (if exists): None
+        Node ID: 6afea834-e04a-4ade-9c57-10187b95b286, Operation: 2, Activity (if exists): None
+          Node ID: d3bbff3c-89a5-4e7f-a425-a90bb9b28e8b, Operation: 5, Activity (if exists): W_Afhandelen leads
+          Node ID: e7d9c80f-5b00-41d9-8095-0d84949ea228, Operation: 5, Activity (if exists): A_PREACCEPTED
+        Node ID: 1521478f-c7f7-482d-aaf6-4b9e7fed85e3, Operation: 1, Activity (if exists): None
+          Node ID: 7da005b8-add8-4146-a838-842793de9c24, Operation: 4, Activity (if exists): None
+            Node ID: 8e7167ab-786c-4de8-a7cc-2e25528ed770, Operation: 5, Activity (if exists): W_Completeren aanvraag
+            Node ID: 1f4f9587-0994-4a3c-a509-da1bec9bb8f7, Operation: 6, Activity (if exists): None
+            Node ID: 1e572f25-3676-44b2-be0b-bb39ee5d4072, Operation: 6, Activity (if exists): None
+          Node ID: dc6daa70-cd9e-4133-99dc-aa4b903569e4, Operation: 0, Activity (if exists): None
+            Node ID: 56d466ea-a931-45ec-99e5-90b79d7fe656, Operation: 2, Activity (if exists): None
+              Node ID: 474af4c9-1e50-4168-87f4-d2704162b4a9, Operation: 6, Activity (if exists): None
+              Node ID: 03ac3742-c987-48a4-b8c7-85d89f2ad267, Operation: 5, Activity (if exists): A_ACCEPTED
+            Node ID: 8a9193f1-473a-4e40-a454-a2aee5479a6a, Operation: 1, Activity (if exists): None
+              Node ID: 6ab21458-2ad2-40e0-b012-af4c20884ff2, Operation: 2, Activity (if exists): None
+                Node ID: d439061e-c8ed-493d-b663-a89bbf3c5b98, Operation: 6, Activity (if exists): None
+                Node ID: 18fa0318-9b9a-4ad0-934c-796c6e48b079, Operation: 4, Activity (if exists): None
+                  Node ID: 6a8c9294-715f-4eae-87e2-7ef587be5b08, Operation: 5, Activity (if exists): O_SELECTED
+                  Node ID: ede06511-e6e4-41fc-83e5-b0b7d8a3af47, Operation: 6, Activity (if exists): None
+                  Node ID: 5c4604cf-33fa-4eae-8591-b3d055fb15e0, Operation: 6, Activity (if exists): None
+              Node ID: 1aa06d0e-ac4c-47db-b843-e63aa1b65a80, Operation: 0, Activity (if exists): None
+                Node ID: 2e5240ea-805f-4aa7-b2cd-1da210292b2a, Operation: 2, Activity (if exists): None
+                  Node ID: df07db4d-b348-4f5e-a5ac-d56dc6e196f9, Operation: 6, Activity (if exists): None
+                  Node ID: 8fd691f2-e558-41b0-9d3c-d9850728eae6, Operation: 5, Activity (if exists): A_FINALIZED
+                Node ID: aa34e919-60e9-4b14-bf3f-80a67574d304, Operation: 4, Activity (if exists): None
+                  Node ID: 337cd0d6-fca3-4773-aab4-1ff2326e3da4, Operation: 0, Activity (if exists): None
+                    Node ID: a6cd1b40-be32-4e84-9a51-f77db44e0c8c, Operation: 2, Activity (if exists): None
+                      Node ID: df0fce8f-8176-4427-8609-b27e8f89765c, Operation: 6, Activity (if exists): None
+                      Node ID: de1382ed-7700-4669-990d-100886369127, Operation: 5, Activity (if exists): A_CANCELLED
+                      Node ID: 0687ffbb-cf21-4d96-9c5d-84e25e3c8c18, Operation: 0, Activity (if exists): None
+                        Node ID: a4816682-b9cc-4121-9395-dd77c3bf3d88, Operation: 5, Activity (if exists): O_CREATED
+                        Node ID: e95f6689-a4e5-4c9e-9723-e6789d9bd2a9, Operation: 5, Activity (if exists): O_SENT
+                    Node ID: 98db7487-1510-43d0-91b6-0307a3693c90, Operation: 2, Activity (if exists): None
+                      Node ID: 8b3ed108-fce4-4f9e-93f7-f4e0bdd53e82, Operation: 5, Activity (if exists): W_Nabellen offertes
+                      Node ID: 428467aa-c782-4571-a1c5-afaef061722a, Operation: 5, Activity (if exists): O_CANCELLED
+                      Node ID: 3b23927c-6762-45f1-aa88-f9abb3f209ee, Operation: 4, Activity (if exists): None
+                        Node ID: 6d2f051e-a868-43fe-975f-7d91d4a1a552, Operation: 2, Activity (if exists): None
+                          Node ID: 2983844d-d0b4-4bf7-b112-20ce5138822c, Operation: 5, Activity (if exists): A_DECLINED
+                          Node ID: 952796c8-3724-4388-943c-37dce62d9742, Operation: 5, Activity (if exists): O_DECLINED
+                          Node ID: 0f494f1e-05ca-4d0b-b663-53d7e0631018, Operation: 0, Activity (if exists): None
+                            Node ID: f0b48515-5720-41cd-99e0-a4993c8f3771, Operation: 2, Activity (if exists): None
+                              Node ID: e4ddac9b-e0a2-4308-9f12-adcf9b9ace83, Operation: 6, Activity (if exists): None
+                              Node ID: 5e7c5e4c-77b8-4346-85b0-af00b2ed4327, Operation: 5, Activity (if exists): O_SENT_BACK
+                            Node ID: 830d5650-7a8e-4d1b-bcde-6a2ace9d99a5, Operation: 2, Activity (if exists): None
+                              Node ID: b1255ee0-d800-4094-96f0-f0155afe2db0, Operation: 5, Activity (if exists): W_Nabellen incomplete dossiers
+                              Node ID: 998e6f20-f808-442d-912c-b3af0dca2303, Operation: 1, Activity (if exists): None
+                                Node ID: 3c732525-2788-4633-8be7-929f5ea4058d, Operation: 5, Activity (if exists): O_ACCEPTED
+                                Node ID: 2ee509b3-0f78-40e6-8a54-5fbacd4c743e, Operation: 2, Activity (if exists): None
+                                  Node ID: 684536d7-1c1a-4969-85f8-5da26f611dba, Operation: 6, Activity (if exists): None
+                                  Node ID: 55cd84ee-5bd6-4a4b-9d15-664717560d3a, Operation: 5, Activity (if exists): A_APPROVED
+                                Node ID: 8e42a667-ceef-4f34-a869-c24940d3db41, Operation: 4, Activity (if exists): None
+                                  Node ID: 07930f87-eb58-4cd0-8385-bd2fcdd8d7ed, Operation: 5, Activity (if exists): W_Valideren aanvraag
+                                  Node ID: 769d0403-e919-4013-895c-223eed6ba0d7, Operation: 6, Activity (if exists): None
+                                  Node ID: da247bc3-3a7a-4f2e-ad96-8cd523414d58, Operation: 6, Activity (if exists): None
+                                Node ID: edb2bb29-af12-4402-bdc6-48f6e2ac1aa7, Operation: 2, Activity (if exists): None
+                                  Node ID: 87cc1312-38b0-489f-867d-4cb51da5bcdc, Operation: 6, Activity (if exists): None
+                                  Node ID: 6c30445d-55cb-49bb-83ec-3cb33c0497a6, Operation: 5, Activity (if exists): A_REGISTERED
+                                Node ID: df493b8b-ff65-4ba4-903a-f14d3f538e15, Operation: 2, Activity (if exists): None
+                                  Node ID: 562189af-c440-46b2-aca6-6adfb4b7d744, Operation: 6, Activity (if exists): None
+                                  Node ID: 17ee10d9-f813-4f51-b528-a41ab44cbbda, Operation: 5, Activity (if exists): A_ACTIVATED
+                        Node ID: 25dc80f0-5a66-44f7-9bf9-68f2de791077, Operation: 6, Activity (if exists): None
+                        Node ID: 62202f7d-0d45-4cc1-97e3-7e004b32c001, Operation: 6, Activity (if exists): None
+                  Node ID: 3580f25a-847e-42b4-a6bf-0fc6b3f671ca, Operation: 6, Activity (if exists): None
+                  Node ID: e5fe04b9-a5e4-41ec-a25e-f4121fa5f73b, Operation: 6, Activity (if exists): None
+      Node ID: 448ff278-f3b5-4cf2-af7c-33b6ef415cd6, Operation: 6, Activity (if exists): None
+      Node ID: cce9d08a-1ff8-4870-a4dc-7ed3b6765242, Operation: 6, Activity (if exists): None
