@@ -3,6 +3,8 @@
 #include "parser.h"
 #include <memory>
 #include <string>
+#include <pybind11/stl.h>
+
 
 class AlignmentWrapper
 {
