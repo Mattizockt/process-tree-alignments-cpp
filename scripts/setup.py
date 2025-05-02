@@ -3,7 +3,8 @@ from pybind11.setup_helpers import Pybind11Extension, build_ext
 import os
 
 # Use C++20 standard to match CMake configuration
-extra_compile_args = ['-std=c++20']
+extra_compile_args = ['-std=c++20', '-pg']  # Add -pg here
+extra_link_args = ['-pg']  #
 
 # Get the directory where setup.py is located
 SETUP_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -36,6 +37,7 @@ ext_modules = [
         sources=source_files,
         include_dirs=include_dirs,
         extra_compile_args=extra_compile_args,
+        extra_link_args=extra_link_args,
         define_macros=define_macros
     ),
 ]

@@ -29,7 +29,36 @@ size_t AlignmentWrapper::align() const
 {
     std::span<const int> trace = traceContent;
     costTable.clear();
+    // traceCounter.clear();
+    a = trace;
+
+    // std::cout << visualizeSpanTrace(trace) << std::endl;
+
+    // int n = trace.size(); // Example value
+    // std::vector<int> vec;
+    // for (int i = 0; i < n; i++) {
+    //     vec.push_back(i);
+    // }
+
     const size_t cost = dynAlign(processTree, trace);
+
+
+    // for (int i = 0; i < n; ++i) {
+    //     auto it = traceCounter.find(i);
+    //     if (it != traceCounter.end()) {
+    //         std::cout << it->second;
+    //     } else {
+    //         std::cout << 0;
+    //     }
+
+    //     if (i < 100) {
+    //         std::cout << ", ";
+    //     }
+    // }
+
+    // std::cout << std::endl;
+    // std::cout << std::endl;
+    // std::cout << std::endl;
     return cost;
 }
 

@@ -12,10 +12,49 @@
 #include <cmath>
 #include <unordered_map>
 #include <stack>
+#include <optional>
+#include <chrono>
 
 using StringVec = std::vector<std::string>;
 using IntVec = std::vector<int>;
 using IntPair = std::pair<int, int>;
+
+std::optional<std::span<const int>> a;
+// std::unordered_map<int, size_t> traceCounter;
+
+// std::vector<int> filter_range_copy(int min_val, int max_val, const std::vector<int> &vec)
+// {
+//     bool needs_filtering = false;
+//     for (int x : vec)
+//     {
+//         if (x < min_val || x > max_val)
+//         {
+//             needs_filtering = true;
+//             break;
+//         }
+//     }
+//     if (!needs_filtering)
+//     {
+//         return vec;
+//     }
+//     std::vector<int> result;
+//     for (int x : vec)
+//     {
+//         if (x >= min_val && x <= max_val)
+//         {
+//             result.push_back(x);
+//         }
+//     }
+//     return result;
+// }
+
+// void increaseCounter(std::vector<int> &currentIndices)
+// {
+//     for (auto index : currentIndices)
+//     {
+//         traceCounter[index]++;
+//     }
+// }
 
 // Forward declaration necessary in C++ (unlike Python where functions can be called before definition)
 const size_t dynAlign(std::shared_ptr<TreeNode> node, const std::span<const int> trace);
@@ -35,13 +74,13 @@ const std::vector<IntPair> getSegments(const std::span<const int> trace, std::sh
         {traceSize, 0}};
 
     IntVec splitPositions;
-    const auto leftActivities = children[0]->getActivities();
+    // const auto leftActivities = children[0]->getActivities();
     const auto rightActivities = children[1]->getActivities();
 
     for (size_t i = 1; i < traceSize; i++)
     {
         if (rightActivities.count(trace[i]) &&
-            leftActivities.count(trace[i - 1]))
+            !rightActivities.count(trace[i - 1]))
         {
             splitPositions.push_back(i);
         }
@@ -87,6 +126,8 @@ std::vector<IntPair> outgoingEdges(const IntPair &vertex, std::shared_ptr<TreeNo
 // Implements _dyn_align_sequence from Python with C++ idioms
 const size_t dynAlignSequence(const std::shared_ptr<TreeNode> node, const std::span<const int> trace)
 {
+    // auto executionStart = std::chrono::high_resolution_clock::now();
+
     const auto &children = node->getChildren();
     const int childCount = children.size();
     const int traceLength = trace.size();
@@ -94,42 +135,52 @@ const size_t dynAlignSequence(const std::shared_ptr<TreeNode> node, const std::s
     if (traceLength == 0)
     {
         // C++ uses std::accumulate with lambda instead of Python's sum() with list comprehension
-        return std::accumulate(children.begin(), children.end(), 0, [&trace](size_t sum, const auto &child)
-                               { return sum + dynAlign(child, trace); });
+        auto x = std::accumulate(children.begin(), children.end(), 0, [&trace](size_t sum, const auto &child)
+                                 { return sum + dynAlign(child, trace); });
+        // auto executionEnd = std::chrono::high_resolution_clock::now();
+        // std::cout << node->getId() << " : " << std::chrono::duration_cast<std::chrono::nanoseconds>(executionEnd - executionStart).count() << std::endl;
+
+        return x;
     }
 
     if (childCount == 1)
     {
-        return dynAlign(children[0], trace);
+        // std::cout << "dynAlignSequence for 1 child " << std::endl << " for trace: " << visualizeSpanTrace(trace) << std::endl;
+        auto x = dynAlign(children[0], trace);
+        // auto executionEnd = std::chrono::high_resolution_clock::now();
+        // std::cout << node->getId() << " : " << std::chrono::duration_cast<std::chrono::nanoseconds>(executionEnd - executionStart).count() << std::endl;
+        return x;
     }
     else if (childCount == 2)
     {
+        // std::cout << "dynAlignSequence for 2 child " << std::endl << " for trace: " << visualizeSpanTrace(trace) << std::endl;
         size_t upperBound = std::numeric_limits<size_t>::max();
 
-        const auto prunedTrace = pruneTrace(children, trace);
-        const auto prunedTraceSpan = std::span<const int>(*prunedTrace);
-
-        const size_t prunedN = prunedTraceSpan.size();
-        const size_t aliens = traceLength - prunedN;
-
-        const auto segments = getSegments(prunedTraceSpan, node);
-        for (const auto& [split, _] : segments)
+        const auto segments = getSegments(trace, node);
+        for (const auto &[split, _] : segments)
         {
-            const auto firstPart = prunedTraceSpan.subspan(0, split);
-            const auto leftCost = dynAlign(children[0], firstPart) + aliens;
+            const auto firstPart = trace.subspan(0, split);
+            // auto lfilteredIndices = filter_range_copy(0, split, indices);
+            const auto leftCost = dynAlign(children[0], firstPart);
 
             if (leftCost >= upperBound)
             {
                 continue;
             }
 
-            const auto secondPart = prunedTraceSpan.subspan(split, prunedN - split);
+            const auto secondPart = trace.subspan(split, traceLength - split);
+            // auto rfilteredIndicies = filter_range_copy(split, traceLength - split, indices);
             const auto rightCost = dynAlign(children[1], secondPart);
 
             upperBound = std::min(leftCost + rightCost, upperBound);
         }
+
+        // auto executionEnd = std::chrono::high_resolution_clock::now();
+        // std::cout << node->getId() << " : " << std::chrono::duration_cast<std::chrono::nanoseconds>(executionEnd - executionStart).count() << std::endl;
         return upperBound;
     }
+
+    // std::cout << "dynAlignSequence for 3 child " << std::endl << " for trace: " << visualizeSpanTrace(trace) << std::endl;
 
     std::unordered_map<int, size_t> activityToChildIndex;
     size_t childIndex = 0;
@@ -187,10 +238,14 @@ const size_t dynAlignSequence(const std::shared_ptr<TreeNode> node, const std::s
         size_t tempCost;
         if (prevVertex.first == -1)
         {
+            // auto filterVec = filter_range_copy(0, currVertex.second, indices);
+            // tempCost = dynAlign(children[currVertex.first], trace.subspan(0, currVertex.second), filterVec);
             tempCost = dynAlign(children[currVertex.first], trace.subspan(0, currVertex.second));
         }
         else
         {
+            // auto filterVec = filter_range_copy(prevVertex.second, currVertex.second - prevVertex.second, indices);
+            // tempCost = dynAlign(children[currVertex.first], trace.subspan(prevVertex.second, currVertex.second - prevVertex.second),
             tempCost = dynAlign(children[currVertex.first], trace.subspan(prevVertex.second, currVertex.second - prevVertex.second));
         }
 
@@ -214,27 +269,40 @@ const size_t dynAlignSequence(const std::shared_ptr<TreeNode> node, const std::s
         }
     }
 
+    // auto executionEnd = std::chrono::high_resolution_clock::now();
+    // std::cout << node->getId() << " : " << std::chrono::duration_cast<std::chrono::nanoseconds>(executionEnd - executionStart).count() << std::endl;
     return bestCost;
 }
 
 // Equivalent to Python's _dyn_align_shuffle
 const size_t dynAlignParallel(const std::shared_ptr<TreeNode> node, const std::span<const int> trace)
 {
+    // auto executionStart = std::chrono::high_resolution_clock::now();
+
     const auto &children = node->getChildren();
     // Create vector of empty trace vectors for each child
     std::vector<IntVec> subTraces(children.size());
+    // std::vector<IntVec> subIndices(children.size());
     std::generate(subTraces.begin(), subTraces.end(), []
                   { return IntVec(); });
+    // std::generate(subIndices.begin(), subIndices.end(), []
+    //               { return IntVec(); });
 
     // Count unmatched activities and assign activities to child subtraces
     const int unmatched = std::count_if(trace.begin(), trace.end(), [&](const int &activity)
                                         {
-            for (size_t i = 0; i < children.size(); i++) {
-                if (children[i]->getActivities().count(activity)) {
-                    subTraces[i].push_back(activity);
-                    return false;
-                }
+        // Calculate the current index in the original trace
+        int currentIndex = &activity - &(*trace.begin());
+        
+        for (size_t i = 0; i < children.size(); i++) {
+            if (children[i]->getActivities().count(activity)) {
+                subTraces[i].push_back(activity);
+                // Add this line to push the index to subIndices
+                // subIndices[i].push_back(currentIndex);
+                
+                return false;
             }
+        }
         return true; });
 
     int cost = 0;
@@ -243,23 +311,31 @@ const size_t dynAlignParallel(const std::shared_ptr<TreeNode> node, const std::s
         cost += dynAlign(children[i], std::span<const int>(subTraces[i]));
     }
 
+    // auto executionEnd = std::chrono::high_resolution_clock::now();
+    // std::cout << node->getId() << " : " << std::chrono::duration_cast<std::chrono::nanoseconds>(executionEnd - executionStart).count() << std::endl;
     return cost + unmatched;
 }
 
 // Equivalent to Python's _dyn_align_xor
 const size_t dynAlignXor(const std::shared_ptr<TreeNode> node, const std::span<const int> trace)
 {
+    // auto executionStart = std::chrono::high_resolution_clock::now();
+
     size_t minCost = std::numeric_limits<size_t>::max();
     for (const auto &child : node->getChildren())
     {
         const size_t cost = dynAlign(child, trace);
         if (cost == 0)
         {
+            // auto executionEnd = std::chrono::high_resolution_clock::now();
+            // std::cout << node->getId() << " : " << std::chrono::duration_cast<std::chrono::nanoseconds>(executionEnd - executionStart).count() << std::endl;
             return cost;
         }
         minCost = std::min(minCost, cost);
     }
 
+    // auto executionEnd = std::chrono::high_resolution_clock::now();
+    // std::cout << node->getId() << " : " << std::chrono::duration_cast<std::chrono::nanoseconds>(executionEnd - executionStart).count() << std::endl;
     return minCost;
 }
 
@@ -267,17 +343,23 @@ const size_t dynAlignXor(const std::shared_ptr<TreeNode> node, const std::span<c
 // for traces of form R(QR)*
 const size_t dynAlignLoop(const std::shared_ptr<TreeNode> node, const std::span<const int> trace)
 {
+    // auto executionStart = std::chrono::high_resolution_clock::now();
+
     const auto &children = node->getChildren();
 
-    if (children.size() != 2)
-    {
-        throw std::runtime_error("Loop node with id: " + node->getId() + " does not have exactly two children.");
-    }
+    // TODO temp outcomment because if testing
+    // if (children.size() != 2)
+    // {
+    //     throw std::runtime_error("Loop node with id: " + node->getId() + " does not have exactly two children.");
+    // }
 
     const size_t n = trace.size();
     if (n == 0)
     {
-        return dynAlign(children[0], trace);
+        // auto executionEnd = std::chrono::high_resolution_clock::now();
+        // std::cout << node->getId() << " : " << std::chrono::duration_cast<std::chrono::nanoseconds>(executionEnd - executionStart).count() << std::endl;
+        auto x = dynAlign(children[0], trace);
+        return x;
     }
 
     // try brute force first
@@ -339,7 +421,7 @@ const size_t dynAlignLoop(const std::shared_ptr<TreeNode> node, const std::span<
 
     // QR bits are aligned by introducing a temporary sequence node
     // and using alignSequence
-    auto tempNode = std::make_shared<TreeNode>(SEQUENCE);
+    auto tempNode = std::make_shared<TreeNode>(SEQUENCE, node->getId() + "_temp");
     tempNode->addChild(children[1]);
     tempNode->addChild(children[0]);
 
@@ -348,6 +430,7 @@ const size_t dynAlignLoop(const std::shared_ptr<TreeNode> node, const std::span<
     std::stack<IntPair> stack;
     for (size_t i = 0; i <= n; i++)
     {
+        // auto fitlerVec = filter_range_copy(0, i);
         const size_t rCost = dynAlign(children[0], trace.subspan(0, i));
 
         stack.push(IntPair(i, i));
@@ -385,6 +468,7 @@ const size_t dynAlignLoop(const std::shared_ptr<TreeNode> node, const std::span<
             }
             else
             {
+                // auto filterVec = filter_range_copy(edge.first, edge.second - edge.first, indices);
                 // Calculate alignment cost for this segment
                 edgesCost = prevEdgesCost + dynAlign(
                                                 tempNode,
@@ -419,6 +503,8 @@ const size_t dynAlignLoop(const std::shared_ptr<TreeNode> node, const std::span<
             }
         }
     }
+    // auto executionEnd = std::chrono::high_resolution_clock::now();
+    // std::cout << node->getId() << " : " << std::chrono::duration_cast<std::chrono::nanoseconds>(executionEnd - executionStart).count() << std::endl;
     return upperBound;
 }
 
@@ -427,20 +513,21 @@ const size_t dynAlignXorLoop(const std::shared_ptr<TreeNode> node, const std::sp
 {
     // TODO temporary solution that fits data set redo(child[0], child[1])
     // this representation should be correct:     // sequence(child[0], redo(child[2], sequence(child[1], child[0])))
-    const auto &children = node->getChildren();
+    // const auto &children = node->getChildren();
 
-    auto tempRedoLoop = std::make_shared<TreeNode>(REDO_LOOP);
-    tempRedoLoop->addChild(children[0]);
-    tempRedoLoop->addChild(children[1]);
+    // auto tempRedoLoop = std::make_shared<TreeNode>(REDO_LOOP);
+    // tempRedoLoop->addChild(children[0]);
+    // tempRedoLoop->addChild(children[1]);
 
-    const size_t cost = dynAlignLoop(tempRedoLoop, trace);
-    return cost;
+    // const size_t cost = dynAlignLoop(tempRedoLoop, trace);
+    return dynAlignLoop(node, trace);
 }
 
 // Activity node alignment - equivalent to _dyn_align_leaf in Python
 // C++ needs to explicitly check if element exists in vector using std::find
 const size_t dynAlignActivity(const std::shared_ptr<TreeNode> node, const std::span<const int> trace)
 {
+    // std::cout << "dynAlignActivity" << std::endl << " for trace: " << visualizeSpanTrace(trace) << std::endl;
     const int &activity = node->getActivity();
 
     if (std::find(trace.begin(), trace.end(), activity) == trace.end())
@@ -455,11 +542,13 @@ const size_t dynAlignActivity(const std::shared_ptr<TreeNode> node, const std::s
 
 const size_t dynAlignSilentActivity(const std::shared_ptr<TreeNode> node, const std::span<const int> trace)
 {
+    // std::cout << "dynSilentAlignActivity" << std::endl << " for trace: " << visualizeSpanTrace(trace) << std::endl;
     return trace.size();
 }
 
-const size_t dynAlign(const std::shared_ptr<TreeNode> node, const std::span<const int> trace)
+const size_t dynAlign(const std::shared_ptr<TreeNode> node, std::span<const int> trace)
 {
+    // increaseCounter(indices);
     const std::string nodeId = node->getId();
     if (costTable.count(nodeId) > 0)
     {
@@ -470,6 +559,33 @@ const size_t dynAlign(const std::shared_ptr<TreeNode> node, const std::span<cons
             return it->second;
         }
     }
+    
+    std::cout << visualizeSpanTrace(trace) << std::endl;
+
+    auto &activities = node->getActivities();
+    std::vector<int> prunedTrace; 
+    for (const auto x : trace)
+    {
+        if (activities.count(x) == 0)
+        {
+            for (const int val : trace) {
+                if (activities.count(val) != 0) {
+                    prunedTrace.push_back(val);
+                }
+            }
+            trace = std::span(prunedTrace);;
+            break;
+        }
+    }
+    std::cout << visualizeSpanTrace(trace) << std::endl;
+    // float aliens = 0;
+    // // Cast 'aliens' to float before division
+    // float percent = static_cast<float>(aliens) / trace.size();
+    // std::cout << percent << std::endl;
+    // std::cout << compareSubsequenceStart(trace) << std::endl;
+    // if (node->getOperation() != XOR_LOOP) {
+    //     std::cout << node->getId() << std::endl;
+    // }
 
     size_t costs;
     switch (node->getOperation())

@@ -82,6 +82,7 @@ public:
     // TreeNode();
     TreeNode(Operation operation);
     TreeNode(Operation operation, int activity);
+    TreeNode(Operation operation, std::string id);
     TreeNode(Operation operation, int activity, std::string id);
 
     // static int
