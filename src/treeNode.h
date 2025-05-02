@@ -98,6 +98,8 @@ public:
 
     const std::unordered_set<int> &getActivities() const;
 
+    void setActivities(std::unordered_set<int> newActivities);
+
     void addChild(std::shared_ptr<TreeNode> child);
 
     const std::vector<std::shared_ptr<TreeNode>> &getChildren() const;

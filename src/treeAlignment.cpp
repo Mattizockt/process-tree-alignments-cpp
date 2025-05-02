@@ -14,6 +14,7 @@
 #include <stack>
 #include <optional>
 #include <chrono>
+#include <iterator>
 
 using StringVec = std::vector<std::string>;
 using IntVec = std::vector<int>;
@@ -65,7 +66,8 @@ const std::vector<IntPair> getSegments(const std::span<const int> trace, std::sh
     const auto &children = node->getChildren();
     if (children.size() != 2)
     {
-        throw std::runtime_error("get_segments_for_sequence not implemented for more/less than two children.");
+        // pass;
+        // throw std::runtime_error("get_segments_for_sequence not implemented for more/less than two children.");
     }
 
     const size_t traceSize = trace.size();
@@ -421,9 +423,18 @@ const size_t dynAlignLoop(const std::shared_ptr<TreeNode> node, const std::span<
 
     // QR bits are aligned by introducing a temporary sequence node
     // and using alignSequence
+
     auto tempNode = std::make_shared<TreeNode>(SEQUENCE, node->getId() + "_temp");
     tempNode->addChild(children[1]);
     tempNode->addChild(children[0]);
+
+    std::unordered_set<int> allActivities;
+    std::set_union(
+        children[0]->getActivities().begin(), children[0]->getActivities().end(),
+        children[1]->getActivities().begin(), children[1]->getActivities().end(),
+        std::inserter(allActivities, allActivities.begin()));
+
+    tempNode->setActivities(allActivities);
 
     std::unordered_map<IntPair, int, PairHash> qrCosts;
 
@@ -559,33 +570,29 @@ const size_t dynAlign(const std::shared_ptr<TreeNode> node, std::span<const int>
             return it->second;
         }
     }
-    
-    std::cout << visualizeSpanTrace(trace) << std::endl;
 
+    size_t aliens = 0;
     auto &activities = node->getActivities();
-    std::vector<int> prunedTrace; 
+    std::vector<int> prunedTrace;
     for (const auto x : trace)
     {
         if (activities.count(x) == 0)
         {
-            for (const int val : trace) {
-                if (activities.count(val) != 0) {
+            for (const int val : trace)
+            {
+                if (activities.count(val) != 0)
+                {
                     prunedTrace.push_back(val);
                 }
+                else
+                {
+                    aliens++;
+                }
             }
-            trace = std::span(prunedTrace);;
+            trace = std::span(prunedTrace);
             break;
         }
     }
-    std::cout << visualizeSpanTrace(trace) << std::endl;
-    // float aliens = 0;
-    // // Cast 'aliens' to float before division
-    // float percent = static_cast<float>(aliens) / trace.size();
-    // std::cout << percent << std::endl;
-    // std::cout << compareSubsequenceStart(trace) << std::endl;
-    // if (node->getOperation() != XOR_LOOP) {
-    //     std::cout << node->getId() << std::endl;
-    // }
 
     size_t costs;
     switch (node->getOperation())
@@ -617,5 +624,5 @@ const size_t dynAlign(const std::shared_ptr<TreeNode> node, std::span<const int>
 
     const std::vector<int> traceVector(trace.begin(), trace.end());
     costTable[nodeId][traceVector] = costs;
-    return costs;
+    return costs + aliens;
 }
