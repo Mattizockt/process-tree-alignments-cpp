@@ -93,16 +93,20 @@ class AlignmentEvaluator:
         self.aligner.loadTree(str(ptml_path / "BPI_Challenge_2012_pt50.ptml"))
         self.random_generator = random.Random(12345)
 
-    def compare_cpp_alignments(self, trace_as_list):
+    def compare_cpp_alignments(self, trace_as_list, repeats=1):
         self.aligner.setTrace(list(trace_as_list))
-        cpp_start = time.time()
-        cpp_cost = self.aligner.align()
-        cpp_end = time.time()
-        cpp_duration = cpp_end - cpp_start
+        
+        min_cpp_dur = float("inf")
+        for i in range(repeats):
+            cpp_start = time.time()
+            cpp_cost = self.aligner.align()
+            cpp_end = time.time()
+            cpp_duration = cpp_end - cpp_start
+            min_cpp_dur = min(min_cpp_dur, cpp_duration)
 
         return {
             "cpp_cost": cpp_cost,
-            "cpp_duration": cpp_duration,
+            "cpp_duration": min_cpp_dur,
             "trace": trace_as_list,
         }
 
@@ -141,7 +145,7 @@ class AlignmentEvaluator:
     def run_cpp_evaluation(self, benchmark, result_path):
         self.benchmark = benchmark
         # ProcessTreeManager.add_id_to_process_tree(benchmark["process_tree_with_ids"])
-        result = self.compare_cpp_alignments(benchmark["event_log"])
+        result = self.compare_cpp_alignments(benchmark["event_log"], 5)
 
         with open(result_path / "costs.csv", "a") as file:
             file.write(
@@ -224,7 +228,7 @@ class DataManager:
                             "event_log": event_log,
                             "process_tree": process_tree,
                             "process_tree_with_ids": process_tree_with_ids,
-                            "repeat": 3,
+                            "repeat": 5,
                             "result_path": result_path,
                             "file_tag": file_tag,
                         }
@@ -336,7 +340,6 @@ def main():
             break
         # evaluator.run_evaluation(benchmark, data_manager.result_path)
         evaluator.run_cpp_evaluation(benchmark, data_manager.result_path)
-        print(count)
 
 
 if __name__ == "__main__":
