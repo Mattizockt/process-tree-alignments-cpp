@@ -6,6 +6,80 @@
 #include <unordered_map>
 #include <unordered_set>
 
+// Hash for vector<int> keys
+std::size_t SpanHash::operator()(const std::vector<int> &vec) const
+{
+    // Main hash
+    size_t hash = 5381;
+
+    // Add sequential hash
+    for (size_t i = 0; i < vec.size(); ++i)
+    {
+        hash = ((hash << 5) + hash) + vec[i];
+    }
+
+    // XOR with pattern signature
+    if (!vec.empty())
+    {
+        hash ^= (vec[0] * 7919) << 16;
+        hash ^= (vec[vec.size() - 1] * 8731) << 8;
+    }
+
+    // Mix in sequence property
+    hash ^= vec.size() * 31;
+
+    return hash;
+}
+
+// Hash for span<const int> lookups
+std::size_t SpanHash::operator()(std::span<const int> vec) const
+{
+    // Main hash
+    size_t hash = 5381;
+
+    // Add sequential hash
+    for (size_t i = 0; i < vec.size(); ++i)
+    {
+        hash = ((hash << 5) + hash) + vec[i];
+    }
+
+    // XOR with pattern signature
+    if (!vec.empty())
+    {
+        hash ^= (vec[0] * 7919) << 16;
+        hash ^= (vec[vec.size() - 1] * 8731) << 8;
+    }
+
+    // Mix in sequence property
+    hash ^= vec.size() * 31;
+
+    return hash;
+}
+
+// using is_transparent = void; // Enable transparent lookup
+
+// Compare vector<int> keys
+bool SpanEqual::operator()(const std::vector<int> &lhs, const std::vector<int> &rhs) const
+{
+    return lhs == rhs;
+}
+
+// Compare vector<int> with span<const int>
+bool SpanEqual::operator()(const std::vector<int> &lhs, std::span<const int> rhs) const
+{
+    if (lhs.size() != rhs.size())
+        return false;
+    return std::equal(lhs.begin(), lhs.end(), rhs.begin());
+}
+
+// Compare span<const int> with vector<int>
+bool SpanEqual::operator()(std::span<const int> lhs, const std::vector<int> &rhs) const
+{
+    if (lhs.size() != rhs.size())
+        return false;
+    return std::equal(lhs.begin(), lhs.end(), rhs.begin());
+}
+
 int TreeNode::numberOfNodes = 0;
 
 std::unordered_map<std::string, std::unordered_map<std::vector<int>, int, SpanHash, SpanEqual>> costTable;

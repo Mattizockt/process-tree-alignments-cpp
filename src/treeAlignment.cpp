@@ -561,14 +561,22 @@ const size_t dynAlign(const std::shared_ptr<TreeNode> node, std::span<const int>
 {
     // increaseCounter(indices);
     const std::string nodeId = node->getId();
-    if (costTable.count(nodeId) > 0)
+
+    // try_emplace only does one lookup and atomically creates/finds the inner map
+    auto [mapIt, wasInserted] = costTable.try_emplace(nodeId);
+    auto &innerMap = mapIt->second;
+
+    // Only set load factor if we just created the map
+    if (wasInserted)
     {
-        // Use find() with span directly - no conversion to vector needed
-        const auto it = costTable[nodeId].find(trace);
-        if (it != costTable[nodeId].end())
-        {
-            return it->second;
-        }
+        innerMap.max_load_factor(0.5f);
+        innerMap.rehash(400);
+    }
+
+    const auto it = innerMap.find(trace);
+    if (it != innerMap.end())
+    {
+        return it->second;
     }
 
     size_t aliens = 0;
