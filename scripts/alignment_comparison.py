@@ -168,7 +168,7 @@ class AlignmentEvaluator:
         results = []
         for variant, trace in trace_variants:
             trace_as_list = tuple([event["concept:name"] for event in trace])
-            result = self.compare_alignments(trace_as_list, 5)
+            result = self.compare_alignments(trace_as_list, 2)
             results.append(result)
 
             with open(result_path / "costs.csv", "a") as file:
@@ -347,6 +347,7 @@ def main():
     # evaluate_event_logs = data_manager.load_special_event_logs()
     evaluate_event_logs = data_manager.load_event_logs()
 
+    # loads 50 tree at the mom
     evaluator = AlignmentEvaluator(data_manager.ptml_path)
 
     for benchmark in evaluate_event_logs:

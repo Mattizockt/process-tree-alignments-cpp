@@ -27,7 +27,8 @@ include_dirs = [os.path.join(PROJECT_ROOT, "include"), os.path.join(PROJECT_ROOT
 # Add definitions to match CMake
 define_macros = [
     ("PROJECT_SOURCE_DIR", f'"{PROJECT_ROOT}"'),
-    ("PROJECT_OUTPUT_DIR", f'"{PROJECT_OUTPUT_DIR}"')
+    ("PROJECT_OUTPUT_DIR", f'"{PROJECT_OUTPUT_DIR}"'),
+    ("ENABLE_UPPER_BOUND", 1)  # Add this line
 ]
 
 ext_modules = [
