@@ -1,7 +1,6 @@
 from pathlib import Path
 from pm4py import discover_process_tree_inductive
 import csv
-import json
 import matplotlib.pyplot as plt
 import numpy as np
 import pm4py
