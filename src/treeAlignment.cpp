@@ -391,65 +391,7 @@ const size_t dynAlignLoop(const std::shared_ptr<TreeNode> node, const std::span<
     }
 #endif
 
-    // try brute force first
-    size_t upperBound = std::numeric_limits<size_t>::max();
-
-    // const auto &rChildrenActv = children[0]->getActivities();
-    // const auto firstTraceVal = trace[0];
-    // const auto lastTraceVal = trace[n - 1];
-
-    // if (rChildrenActv.count(firstTraceVal) && rChildrenActv.count(lastTraceVal))
-    // {
-    //     std::vector<std::span<const int>> rParts;
-    //     std::vector<std::span<const int>> qParts;
-
-    //     size_t i = 0;
-    //     while (i < n && rChildrenActv.count(trace[i]))
-    //     {
-    //         i += 1;
-    //     }
-    //     const auto startPart = trace.subspan(0, i);
-    //     rParts.push_back(startPart);
-
-    //     while (i < n)
-    //     {
-    //         size_t j = i;
-    //         while (j < n && !(rChildrenActv.count(trace[j])))
-    //         {
-    //             j += 1;
-    //         }
-    //         const auto qPart = trace.subspan(i, j - i);
-    //         qParts.push_back(qPart);
-
-    //         i = j;
-    //         while (i < n && rChildrenActv.count(trace[i]))
-    //         {
-    //             i += 1;
-    //         }
-    //         const auto rPart = trace.subspan(j, i - j);
-    //         rParts.push_back(rPart);
-    //     }
-
-    //     upperBound = 0;
-
-    //     for (size_t i = 0; i < rParts.size(); i++)
-    //     {
-    //         upperBound += dynAlign(children[0], rParts[i]);
-    //     }
-
-    //     for (size_t i = 0; i < qParts.size(); i++)
-    //     {
-    //         upperBound += dynAlign(children[1], qParts[i]);
-    //     }
-    // }
-
-    // if (upperBound == 0)
-    // {
-    //     return 0;
-    // }
-
-    // QR bits are aligned by introducing a temporary sequence node
-    // and using alignSequence
+#if DFS_LOOP == 1
     auto tempNode = std::make_shared<TreeNode>(SEQUENCE);
     tempNode->addChild(children[1]);
     tempNode->addChild(children[0]);
@@ -531,6 +473,84 @@ const size_t dynAlignLoop(const std::shared_ptr<TreeNode> node, const std::span<
         }
     }
     return upperBound;
+
+#else
+
+    std::vector<IntPair> edges;
+    for (size_t i = 0; i <= n; ++i)
+    {
+        for (size_t j = i; j <= n; ++j)
+        {
+            edges.emplace_back(i, j);
+        }
+    }
+
+    // QR bits are aligned by introducing a temporary sequence node
+    // and using alignSequence
+    auto tempNode = std::make_shared<TreeNode>(SEQUENCE);
+    tempNode->addChild(children[1]);
+    tempNode->addChild(children[0]);
+
+    std::unordered_map<IntPair, size_t, PairHash> qrCosts;
+    for (const auto &edge : edges)
+    {
+        if (edge.first == edge.second)
+        {
+            qrCosts[edge] = 0;
+            continue;
+        }
+        const auto subTrace = trace.subspan(edge.first, edge.second - edge.first);
+        const size_t cost = dynAlign(tempNode, subTrace);
+        qrCosts[edge] = cost;
+    }
+
+    for (size_t index = 0; index < n; index++)
+    {
+        bool change = false;
+        for (const auto &edge : edges)
+        {
+
+            if (qrCosts[edge] == 0)
+            {
+                continue;
+            }
+
+            size_t optimalCost = qrCosts[edge];
+            for (size_t j = edge.first + 1; j < edge.second; j++)
+            {
+                const size_t newCost = qrCosts[{edge.first, j}] + qrCosts[{j, edge.second}];
+                if (newCost < optimalCost)
+                {
+                    optimalCost = newCost;
+                    change = true;
+                }
+            }
+            qrCosts[edge] = optimalCost;
+        }
+        if (!change)
+        {
+            break;
+        }
+    }
+
+    std::unordered_map<size_t, size_t> rCosts(n);
+    for (size_t i = 0; i <= n; i++)
+    {
+        rCosts[i] = dynAlign(children[0], trace.subspan(0, i));
+    }
+
+    size_t minimalCosts = std::numeric_limits<size_t>::max();
+    for (size_t i = 0; i <= n; i++)
+    {
+        const size_t costs = rCosts[i] + qrCosts[{i, n}];
+        if (costs < minimalCosts)
+        {
+            minimalCosts = costs;
+        }
+    }
+
+    return minimalCosts;
+#endif
 }
 
 // some event logs use a XorLoop instead of a RedoLoop

@@ -1,4 +1,4 @@
-#include "../include/rapidxml_utils.hpp"
+#include "../external/rapidxml_utils.hpp"
 #include "parser.h"
 #include "treeAlignment.h"
 #include "treeNode.h"
