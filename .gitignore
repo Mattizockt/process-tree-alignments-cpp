@@ -1,8 +1,9 @@
-build/
 .vscode/
-data/*
+build/
+data
+evaluation
 myenv   
 output/
 scripts/__pycache__
-scripts/alignment.egg-info
 scripts/alignment.cpython-312-x86_64-linux-gnu.so
+scripts/alignment.egg-info
