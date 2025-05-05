@@ -9,10 +9,47 @@
 #include <vector>
 #include <algorithm>
 #include <iostream>
+#include <unordered_map>
+#include <stack>
 
 using StringVec = std::vector<std::string>;
 using IntVec = std::vector<int>;
 using IntPair = std::pair<int, int>;
+
+// Helper function to get segments - analogous to get_segments_for_sequence in Python
+const std::vector<IntPair> getSegments(const std::span<const int> trace, std::shared_ptr<TreeNode> node)
+{
+    const auto &children = node->getChildren();
+    if (children.size() != 2)
+    {
+        throw std::runtime_error("get_segments_for_sequence not implemented for more/less than two children.");
+    }
+
+    const size_t traceSize = trace.size();
+    std::vector<IntPair> segments = {
+        {0, traceSize},
+        {traceSize, 0}};
+
+    IntVec splitPositions;
+    const auto leftActivities = children[0]->getActivities();
+    const auto rightActivities = children[1]->getActivities();
+
+    for (size_t i = 1; i < traceSize; i++)
+    {
+        if (rightActivities.count(trace[i]) &&
+            leftActivities.count(trace[i - 1]))
+        {
+            splitPositions.push_back(i);
+        }
+    }
+
+    for (const auto splitPosition : splitPositions)
+    {
+        segments.push_back({splitPosition, traceSize - splitPosition});
+    }
+
+    return segments;
+}
 
 // Forward declaration necessary in C++ (unlike Python where functions can be called before definition)
 const size_t dynAlign(std::shared_ptr<TreeNode> node, const std::span<const int> trace);
@@ -106,9 +143,12 @@ const std::vector<PairCost> outgoingEdges(const IntPair v, const std::span<const
     const size_t n = trace.size();
     const auto &children = node->getChildren();
     const size_t numChild = children.size();
+std::vector<IntPair> outgoingEdges(const IntPair &vertex, std::shared_ptr<TreeNode> node, std::vector<size_t> &splitPositions)
+{
+    std::vector<IntPair> result;
+    size_t const numChild = node->getChildren().size();
 
-    std::vector<PairCost> result;
-    if (v.first == numChild)
+    if (vertex.first >= numChild - 1)
     {
         return result;
     }
@@ -125,149 +165,157 @@ const std::vector<PairCost> outgoingEdges(const IntPair v, const std::span<const
         const auto subTrace = trace.subspan(v.second, k - v.second);
         const int tempCost = dynAlign(children.at(v.first), subTrace);
         result.push_back(PairCost(IntPair(v.first, v.second), IntPair(v.first + 1, k), tempCost));
+
+    if (vertex.first == numChild - 2)
+    {
+        result.push_back({vertex.first + 1, splitPositions.back()});
+        return result;
     }
+
+    // use binary search to find start where elements are bigger than
+    auto it = std::lower_bound(splitPositions.begin(), splitPositions.end(), vertex.second);
+    result.reserve(std::distance(it, splitPositions.end()));
+
+    // TODO: later use heuristic to sort this order
+    for (; it != splitPositions.end(); ++it)
+    {
+        result.push_back({vertex.first + 1, *it});
+    }
+
     return result;
 }
 
 // Implements _dyn_align_sequence from Python with C++ idioms
 const size_t dynAlignSequence(const std::shared_ptr<TreeNode> node, const std::span<const int> trace)
 {
-    const size_t n = trace.size();
     const auto &children = node->getChildren();
-    const size_t numChildren = children.size();
+    const int childCount = children.size();
+    const int traceLength = trace.size();
 
-    if (n == 0)
+    if (traceLength == 0)
     {
         // C++ uses std::accumulate with lambda instead of Python's sum() with list comprehension
         return std::accumulate(children.begin(), children.end(), 0, [&trace](size_t sum, const auto &child)
                                { return sum + dynAlign(child, trace); });
     }
 
-    size_t costs = std::numeric_limits<size_t>::max();
-
-#if ENABLE_UPPER_BOUND == 1
-    size_t pos = 0;
-    size_t old_pos = 0;
-    costs = 0;
-
-    // Try greedy approach first - attempt to partition trace by activity membership
-    if (n > numChildren &&
-        children[0]->getActivities().count(trace[0]) &&
-        children.back()->getActivities().count(trace.back()))
+    if (childCount == 1)
     {
-        for (const auto &child : children)
-        {
-            while (pos < trace.size() && child->getActivities().count(trace[pos]))
-            {
-                pos += 1;
-            }
-            const auto subTrace = trace.subspan(old_pos, pos - old_pos);
-            costs += dynAlign(child, subTrace);
-            old_pos = pos;
-        }
+        return dynAlign(children[0], trace);
     }
+    else if (childCount == 2)
+    {
+        size_t upperBound = std::numeric_limits<size_t>::max();
 
-    if (pos < trace.size())
-    {
-        costs = std::numeric_limits<size_t>::max();
-    }
-#endif
-    // special case for binary sequence operator (common case optimization)
-    if (numChildren == 2)
-    {
-        // remove elements that are not in the subtree
-        // TODO this way the trace always has to be recomputed? maybe there could be a more efficient solution
-        const std::shared_ptr<IntVec> prunedTrace = pruneTrace(children, trace);
+        const auto prunedTrace = pruneTrace(children, trace);
         const auto prunedTraceSpan = std::span<const int>(*prunedTrace);
 
         const size_t prunedN = prunedTraceSpan.size();
-        const size_t aliens = n - prunedN;
+        const size_t aliens = traceLength - prunedN;
 
-        const auto segments = getSegmentsForSequence(prunedTraceSpan, node);
-        for (const auto segment : segments)
+        const auto segments = getSegments(prunedTraceSpan, node);
+        for (const auto& [split, _] : segments)
         {
-            const int split = segment.first;
             const auto firstPart = prunedTraceSpan.subspan(0, split);
-            const auto secondPart = prunedTraceSpan.subspan(split, prunedN - split);
-
             const auto leftCost = dynAlign(children[0], firstPart) + aliens;
-#if ENABLE_UPPER_BOUND == 1
-            if (leftCost >= costs)
+
+            if (leftCost >= upperBound)
             {
                 continue;
             }
-#endif
+
+            const auto secondPart = prunedTraceSpan.subspan(split, prunedN - split);
             const auto rightCost = dynAlign(children[1], secondPart);
 
-            costs = std::min(leftCost + rightCost, costs);
+            upperBound = std::min(leftCost + rightCost, upperBound);
         }
-        return costs;
+        return upperBound;
     }
 
-    std::vector<IntPair> vertices;
-
-    for (size_t i = 0; i <= numChildren; ++i)
+    std::unordered_map<int, size_t> activityToChildIndex;
+    size_t childIndex = 0;
+    for (const auto &child : children)
     {
-        for (size_t j = 0; j <= n; ++j)
+        for (const auto activity : child->getActivities())
         {
-            if ((i > 0 && i < numChildren) || (i == 0 && j == 0) || (i == numChildren && j == n))
-            {
-                vertices.push_back(std::make_pair(i, j));
-            }
+            activityToChildIndex[activity] = childIndex;
         }
+        ++childIndex;
     }
 
-    IntPair start(0, 0);
-    IntPair end(numChildren, n);
-
-    // Using unordered_map with custom hash for pair keys (would be simple dict in Python)
-    std::unordered_map<IntPair, size_t, PairHash> dijkstraCosts;
-
-    for (const auto vertex : vertices)
+    std::vector<size_t> splitPositions = {0};
+    for (size_t i = 1; i < traceLength; i++)
     {
-        dijkstraCosts[vertex] = std::numeric_limits<size_t>::max();
-    }
-    dijkstraCosts[start] = 0;
-    std::unordered_set<IntPair, PairHash> visited;
-
-    // Dijkstra implementation - note Python would typically use a priority queue
-    // right now not very efficient
-    const auto verticesSize = vertices.size();
-    while (visited.size() < verticesSize)
-    {
-        IntPair current;
-        size_t min_cost = std::numeric_limits<size_t>::max();
-
-        for (const auto &v : vertices)
+        if (activityToChildIndex[trace[i]] != activityToChildIndex[trace[i - 1]])
         {
-            if (visited.find(v) == visited.end() && dijkstraCosts[v] <= min_cost)
-            {
-                min_cost = dijkstraCosts[v];
-                current = v;
-            }
+            splitPositions.push_back(i);
         }
-        // TODO is it possible to just stop the while loop if dijkstraCosts[current] > costs
-        // because its already larger than the upper bound?
-        // test once with more computation available
-        visited.insert(current);
-#if ENABLE_UPPER_BOUND == 1
-        if (dijkstraCosts[current] > costs)
+    }
+    splitPositions.push_back(traceLength);
+
+    std::unordered_map<IntPair, size_t, PairHash> vertexCosts;
+    for (size_t i = 0; i < childCount - 1; i++)
+    {
+        for (const auto splitPosition : splitPositions)
+        {
+            const IntPair vertex = {i, splitPosition};
+            vertexCosts[vertex] = std::numeric_limits<size_t>::max();
+        }
+    }
+
+    const IntPair finalVertex = {childCount - 1, splitPositions.back()};
+    const IntPair startVertex = {-1, 0};
+    vertexCosts[startVertex] = 0;
+    vertexCosts[finalVertex] = std::numeric_limits<size_t>::max();
+
+    std::stack<IntPair> stack;
+    std::unordered_map<IntPair, IntPair, PairHash> prevVertices;
+
+    for (const size_t splitPosition : splitPositions)
+    {
+        const IntPair initialVertex = {0, splitPosition};
+        stack.push(initialVertex);
+        prevVertices[initialVertex] = startVertex;
+    }
+
+    size_t bestCost = std::numeric_limits<size_t>::max();
+    while (!stack.empty())
+    {
+        const IntPair currVertex = stack.top();
+        stack.pop();
+        const IntPair prevVertex = prevVertices[currVertex];
+
+        size_t tempCost;
+        if (prevVertex.first == -1)
+        {
+            tempCost = dynAlign(children[currVertex.first], trace.subspan(0, currVertex.second));
+        }
+        else
+        {
+            tempCost = dynAlign(children[currVertex.first], trace.subspan(prevVertex.second, currVertex.second - prevVertex.second));
+        }
+
+        const size_t newCost = tempCost + vertexCosts[prevVertex];
+        if (newCost >= bestCost || newCost >= vertexCosts[currVertex])
         {
             continue;
         }
-        for (const auto edge : outgoingEdges(current, trace, node, costs))
-#else
-        for (const auto edge : outgoingEdges(current, trace, node))
-#endif
+        vertexCosts[currVertex] = newCost;
+
+        if (currVertex == finalVertex)
         {
-            if (dijkstraCosts[current] != std::numeric_limits<size_t>::max())
-            {
-                dijkstraCosts[edge.second_pair] = std::min(dijkstraCosts[edge.second_pair], dijkstraCosts[current] + edge.cost);
-            }
+            bestCost = newCost;
+            continue;
+        }
+
+        for (const auto &nextEdge : outgoingEdges(currVertex, node, splitPositions))
+        {
+            prevVertices[nextEdge] = currVertex;
+            stack.push(nextEdge);
         }
     }
 
-    return dijkstraCosts[end];
+    return bestCost;
 }
 
 // Equivalent to Python's _dyn_align_shuffle
