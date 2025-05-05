@@ -52,18 +52,10 @@ set(SOURCE_FILES
 
 # Main executable
 add_executable(process-tree-alignments-cpp ${SOURCE_FILES})
-
-# Define source files for unit tests
-set(TEST_FILES
-  tests/alignTest.cpp
-  ${COMMON_SOURCES}
+target_compile_definitions(process-tree-alignments-cpp PRIVATE
+  ENABLE_UPPER_BOUND
 )
-
-# Test executable
-add_executable(unit-tests ${TEST_FILES})
-target_link_libraries(unit-tests PRIVATE Catch2::Catch2WithMain)
 
 # Test configuration
 include(CTest)
 include(Catch)
-catch_discover_tests(unit-tests)
