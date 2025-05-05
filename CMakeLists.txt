@@ -27,6 +27,16 @@ FetchContent_Declare(
   GIT_TAG v3.4.0
 )
 
+# Fetch RapidXML
+FetchContent_Declare(
+    rapidxml
+    GIT_REPOSITORY https://github.com/dwd/rapidxml.git
+    GIT_TAG master
+)
+
+# Make RapidXML available
+FetchContent_MakeAvailable(rapidxml)
+
 # Make both available
 FetchContent_MakeAvailable(pybind11 Catch2)
 
