@@ -67,7 +67,7 @@ struct PairCost
 
 // Generates outgoing edges for Dijkstra algorithm
 // analogous to Python version
-const std::vector<PairCost> outgoingEdges(const IntPair v, const std::span<const int> trace, std::shared_ptr<TreeNode> node)
+const std::vector<PairCost> outgoingEdges(const IntPair v, const std::span<const int> trace, std::shared_ptr<TreeNode> node, size_t upperBound)
 {
     const size_t n = trace.size();
     const auto &children = node->getChildren();
@@ -90,13 +90,17 @@ const std::vector<PairCost> outgoingEdges(const IntPair v, const std::span<const
         }
         const auto subTrace = trace.subspan(v.second, k - v.second);
         const int tempCost = dynAlign(children.at(v.first), subTrace);
+        if (tempCost > upperBound)
+        {
+            continue;
+        }
         result.push_back(PairCost(IntPair(v.first, v.second), IntPair(v.first + 1, k), tempCost));
     }
     return result;
 }
 
 // Implements _dyn_align_sequence from Python with C++ idioms
-const int dynAlignSequence(const std::shared_ptr<TreeNode> node, const std::span<const int> trace)
+const size_t dynAlignSequence(const std::shared_ptr<TreeNode> node, const std::span<const int> trace)
 {
     const size_t n = trace.size();
     const auto &children = node->getChildren();
@@ -109,9 +113,36 @@ const int dynAlignSequence(const std::shared_ptr<TreeNode> node, const std::span
                                { return sum + dynAlign(child, trace); });
     }
 
+    size_t pos = 0;
+    size_t old_pos = 0;
+    size_t costs = 0;
+
+    // Try greedy approach first - attempt to partition trace by activity membership
+    if (n > numChildren &&
+        children[0]->getActivities().count(trace[0]) &&
+        children.back()->getActivities().count(trace.back()))
+    {
+        for (const auto &child : children)
+        {
+            while (pos < trace.size() && child->getActivities().count(trace[pos]))
+            {   
+                pos += 1;
+            }
+            const auto subTrace = trace.subspan(old_pos, pos - old_pos);
+            costs += dynAlign(child, subTrace);
+            old_pos = pos;
+        }
+    }
+
+    if (pos < trace.size())
+    {
+        costs = std::numeric_limits<size_t>::max();
+    }
+
     // special case for binary sequence operator (common case optimization)
     if (numChildren == 2)
     {
+        // TODO why is this being resetted? makes no sense
         size_t costs = std::numeric_limits<size_t>::max();
         // remove elements that are not in the subtree
         // TODO this way the trace always has to be recomputed? maybe there could be a more efficient solution
@@ -129,6 +160,10 @@ const int dynAlignSequence(const std::shared_ptr<TreeNode> node, const std::span
             const auto secondPart = prunedTraceSpan.subspan(split, prunedN - split);
 
             const auto leftCost = dynAlign(children[0], firstPart) + aliens;
+            if (leftCost >= costs)
+            {
+                continue;
+            }
             const auto rightCost = dynAlign(children[1], secondPart);
 
             costs = std::min(leftCost + rightCost, costs);
@@ -178,9 +213,16 @@ const int dynAlignSequence(const std::shared_ptr<TreeNode> node, const std::span
                 current = v;
             }
         }
+        // TODO is it possible to just stop the while loop if dijkstraCosts[current] > costs
+        // because its already larger than the upper bound?
+        // test once with more computation available
         visited.insert(current);
+        if (dijkstraCosts[current] > costs)
+        {
+            continue;
+        }
 
-        for (const auto edge : outgoingEdges(current, trace, node))
+        for (const auto edge : outgoingEdges(current, trace, node, costs))
         {
             if (dijkstraCosts[current] != std::numeric_limits<size_t>::max())
             {
@@ -253,6 +295,62 @@ const size_t dynAlignLoop(const std::shared_ptr<TreeNode> node, const std::span<
     if (n == 0)
     {
         return dynAlign(children[0], trace);
+    }
+    // TODO upperbound is not used yet
+    size_t upperBound = std::numeric_limits<size_t>::max();
+
+    const auto &rChildrenActv = children[0]->getActivities();
+    const auto firstTraceVal = trace[0];
+    const auto lastTraceVal = trace[n - 1];
+
+    if (rChildrenActv.count(firstTraceVal) && rChildrenActv.count(lastTraceVal))
+    {
+        std::vector<std::span<const int>> rParts;
+        std::vector<std::span<const int>> qParts;
+
+        size_t i = 0;
+        while (i < n && rChildrenActv.count(trace[i]))
+        {
+            i += 1;
+        }
+        const auto startPart = trace.subspan(0, i);
+        rParts.push_back(startPart);
+
+        while (i < n)
+        {
+            size_t j = i;
+            while (j < n && !(rChildrenActv.count(trace[j])))
+                {
+                    j += 1;
+                }
+            const auto qPart = trace.subspan(i, j-i);
+            qParts.push_back(qPart);
+
+            i = j;
+            while (i < n && rChildrenActv.count(trace[i]))
+            {
+                i += 1;
+            }
+            const auto rPart = trace.subspan(j, i-j);
+            rParts.push_back(rPart);
+        }
+
+        upperBound = 0;
+
+        for (size_t i = 0; i < rParts.size(); i++)
+        {
+            upperBound += dynAlign(children[0], rParts[i]);
+        }
+
+        for (size_t i = 0; i < qParts.size(); i++)
+        {
+            upperBound += dynAlign(children[1], qParts[i]);
+        }
+    }
+
+    if (upperBound == 0)
+    {
+        return 0;
     }
 
     std::vector<IntPair> edges;
@@ -369,17 +467,15 @@ const size_t dynAlignSilentActivity(const std::shared_ptr<TreeNode> node, const 
 
 const size_t dynAlign(const std::shared_ptr<TreeNode> node, const std::span<const int> trace)
 {
-    // increaseCounter(indices);
     const std::string nodeId = node->getId();
-
-    // try_emplace only does one lookup and atomically creates/finds the inner map
-    auto [mapIt, wasInserted] = costTable.try_emplace(nodeId);
-    auto &innerMap = mapIt->second;
-
-    const auto it = innerMap.find(trace);
-    if (it != innerMap.end())
+    if (costTable.count(nodeId) > 0)
     {
-        return it->second;
+        // Use find() with span directly - no conversion to vector needed
+        const auto it = costTable[nodeId].find(trace);
+        if (it != costTable[nodeId].end())
+        {
+            return it->second;
+        }
     }
 
     size_t costs;

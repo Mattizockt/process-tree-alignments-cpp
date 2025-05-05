@@ -1,6 +1,8 @@
 from pathlib import Path
+from pathlib import Path
 from pm4py import discover_process_tree_inductive
 import csv
+import json
 import matplotlib.pyplot as plt
 import numpy as np
 import pm4py
@@ -108,7 +110,7 @@ def compare_output(paths: list[str], numData: int = 35):
 
 
 # read in output and plot it on graph
-def summarize_output(paths: list[str], names: list[str], numData: int = 35):
+def summarize_output(paths: list[str], names : list[str], numData: int = 35):
     # Initialize the figure once, outside the loop
     plt.figure(figsize=(10, 6))
 
@@ -153,7 +155,9 @@ def summarize_output(paths: list[str], names: list[str], numData: int = 35):
     for i, data in enumerate(graphs):
         x_values = np.arange(len(data))
         color = colors[i % len(colors)]
-        plt.plot(x_values, data, color=color, linewidth=2, marker="o", label=names[i])
+        plt.plot(
+            x_values, data, color=color, linewidth=2, marker="o", label=names[i]
+        )
 
     # Add labels and styling
     plt.xlabel("Position (i)")
@@ -173,12 +177,15 @@ paths = [
     # "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/without_vector/BPI_Challenge_2012_pt50.ptml/costs.csv",
 ]
 
-names = [
+names = [ 
     "sequence-improvement",
     "baseline",
     "upper_bounds",
     "low_bound",
 ]
 
-# summarize_output(paths, names, 105)
-create_ptml()
+summarize_output(paths, names, 105)
+
+# create_ptml()
+# visualize_tree("./data/ptml/BPI_Challenge_2012_pt00.ptml")
+# feed_compare_data("output.txt")
