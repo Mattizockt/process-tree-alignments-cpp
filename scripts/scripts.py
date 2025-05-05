@@ -187,5 +187,6 @@ names = [
 summarize_output(paths, names, 105)
 
 # create_ptml()
-# visualize_tree("./data/ptml/BPI_Challenge_2012_pt00.ptml")
+# visualize_tree("./data/ptml/BPI_Challenge_2012_pt50.ptml")
+# visualize_tree("./data/ptml/Road_Traffic_Fine_Management_Process_pt50.ptml")
 # feed_compare_data("output.txt")
