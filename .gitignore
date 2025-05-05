@@ -1,7 +1,6 @@
 build/
 .vscode/
-data/ptml
-data/xes
+data/*
 myenv   
 output/
 scripts/__pycache__

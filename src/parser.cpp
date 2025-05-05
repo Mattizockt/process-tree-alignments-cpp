@@ -221,17 +221,6 @@ std::shared_ptr<TreeNode> createNode(const std::string &nodeName, rapidxml::xml_
         if (!nameAttr)
             throw std::runtime_error("Error: Missing 'name' attribute for activity node.");
 
-        // Verify activity exists in our mapping
-        // originally there to verify that the activity is in the activitiesToInt map
-        // if (activitiesToInt.find(nameAttr->value()) != activitiesToInt.end())
-        // {
-        //     return std::make_shared<TreeNode>(ACTIVITY, activitiesToInt[nameAttr->value()], nodeId);
-        // }
-        // else
-        // {
-        //     throw std::runtime_error("Activity parsed in ptml tree doesn't exist in activitiesToInt map.");
-        // }
-
         std::string activityName = nameAttr->value();
         if (activitiesToInt.find(activityName) == activitiesToInt.end())
         {

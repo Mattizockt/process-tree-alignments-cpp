@@ -369,15 +369,17 @@ const size_t dynAlignSilentActivity(const std::shared_ptr<TreeNode> node, const 
 
 const size_t dynAlign(const std::shared_ptr<TreeNode> node, const std::span<const int> trace)
 {
+    // increaseCounter(indices);
     const std::string nodeId = node->getId();
-    if (costTable.count(nodeId) > 0)
+
+    // try_emplace only does one lookup and atomically creates/finds the inner map
+    auto [mapIt, wasInserted] = costTable.try_emplace(nodeId);
+    auto &innerMap = mapIt->second;
+
+    const auto it = innerMap.find(trace);
+    if (it != innerMap.end())
     {
-        // Use find() with span directly - no conversion to vector needed
-        const auto it = costTable[nodeId].find(trace);
-        if (it != costTable[nodeId].end())
-        {
-            return it->second;
-        }
+        return it->second;
     }
 
     size_t costs;
