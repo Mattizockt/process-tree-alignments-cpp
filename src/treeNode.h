@@ -7,60 +7,25 @@
 #include <unordered_map>
 #include <vector>
 #include <span>
+#include <functional>
+#include <iostream>
 
-struct SpanHash
-{
-    using is_transparent = void; // Enable transparent lookup
-
-    // Hash for vector<int> keys
-    std::size_t operator()(const std::vector<int> &vec) const
+    // Custom hash function for vector<int> and span<const int>
+    struct SpanHash
     {
-        std::size_t seed = vec.size();
-        for (auto &i : vec)
-        {
-            seed ^= i + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-        }
-        return seed;
-    }
+        using is_transparent = void; // Enable transparent lookup
+        std::size_t operator()(const std::vector<int> &vec) const;
+        std::size_t operator()(std::span<const int> vec) const;
+    };
 
-    // Hash for span<const int> lookups
-    std::size_t operator()(std::span<const int> span) const
+    // Custom equality comparison for vector<int> and span<const int>
+    struct SpanEqual
     {
-        std::size_t seed = span.size();
-        for (auto &i : span)
-        {
-            seed ^= i + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-        }
-        return seed;
-    }
-};
-
-struct SpanEqual
-{
-    using is_transparent = void; // Enable transparent lookup
-
-    // Compare vector<int> keys
-    bool operator()(const std::vector<int> &lhs, const std::vector<int> &rhs) const
-    {
-        return lhs == rhs;
-    }
-
-    // Compare vector<int> with span<const int>
-    bool operator()(const std::vector<int> &lhs, std::span<const int> rhs) const
-    {
-        if (lhs.size() != rhs.size())
-            return false;
-        return std::equal(lhs.begin(), lhs.end(), rhs.begin());
-    }
-
-    // Compare span<const int> with vector<int>
-    bool operator()(std::span<const int> lhs, const std::vector<int> &rhs) const
-    {
-        if (lhs.size() != rhs.size())
-            return false;
-        return std::equal(lhs.begin(), lhs.end(), rhs.begin());
-    }
-};
+        using is_transparent = void; // Enable transparent lookup
+        bool operator()(const std::vector<int> &lhs, const std::vector<int> &rhs) const;
+        bool operator()(const std::vector<int> &lhs, std::span<const int> rhs) const;
+        bool operator()(std::span<const int> lhs, const std::vector<int> &rhs) const;
+    };
 
 // node id -> (trace -> alignmentcost)
 extern std::unordered_map<std::string, std::unordered_map<std::vector<int>, int, SpanHash, SpanEqual>> costTable;

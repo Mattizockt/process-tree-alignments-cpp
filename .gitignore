@@ -4,6 +4,7 @@ data/ptml
 data/xes
 myenv   
 output/
+outliers/
 scripts/__pycache__
 scripts/alignment.egg-info
 scripts/alignment.cpython-312-x86_64-linux-gnu.so
