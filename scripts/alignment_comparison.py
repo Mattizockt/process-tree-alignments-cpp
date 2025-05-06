@@ -162,6 +162,7 @@ class AlignmentEvaluator:
             benchmark["process_tree_with_ids"]
         )
 
+        # get variants doesn't work yet
         trace_variants = list(zip(*get_variants(benchmark["event_log"], None)))
         self.random_generator.shuffle(trace_variants)
 

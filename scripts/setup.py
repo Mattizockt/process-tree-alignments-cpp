@@ -34,6 +34,7 @@ define_macros = [
     ("ENABLE_UPPER_BOUND", 1),
     ("DFS_LOOP", 1),
     ("SEQUENCE_IMPROVEMENT", 1),
+    ("TRACE_PRUNING", 1),
 ]
 
 ext_modules = [

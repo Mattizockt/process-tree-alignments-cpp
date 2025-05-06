@@ -35,11 +35,6 @@ std::shared_ptr<TreeNode> constructTree(
     return root;
 }
 
-std::shared_ptr<std::vector<int>> createSubtrace(const std::shared_ptr<std::vector<int>> &trace, size_t i, size_t j)
-{
-    return std::make_shared<std::vector<int>>(trace->begin() + i, trace->begin() + j);
-}
-
 void printNestedVector(const std::vector<std::vector<int>> &vec)
 {
     for (size_t i = 0; i < vec.size(); ++i)
