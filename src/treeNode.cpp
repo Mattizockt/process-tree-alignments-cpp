@@ -68,6 +68,11 @@ int TreeNode::getActivity() const
     return activity;
 }
 
+void TreeNode::setActivities(std::unordered_set<int> newActivities)
+{
+    activities = newActivities;
+}
+
 void TreeNode::addChild(std::shared_ptr<TreeNode> child)
 {
     children.push_back(child);

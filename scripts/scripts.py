@@ -134,15 +134,12 @@ def summarize_output(paths: list[str], names : list[str], numData: int = 35):
                 if j == numData:
                     break
                 # Make sure to convert string to float for plotting
-                graphs[i].append(float(row[0]))
+                graphs[i].append(float(row[1]))
 
     for i in range(len(graphs)):
-        miliseconds = sum(graphs[i])
-
-        minutes = miliseconds // 60000
-        minute_seconds = (miliseconds % 60000) / 1000
-
-        seconds = miliseconds / 1000
+        seconds = sum(graphs[i])
+        minutes = seconds // 60
+        minute_seconds = seconds / 100
 
         print(
             f"Graph {names[i]} has the total duration of : {minutes} minutes and {minute_seconds} seconds"
@@ -169,24 +166,10 @@ def summarize_output(paths: list[str], names : list[str], numData: int = 35):
     plt.show()
 
 
-paths = [
-    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/sequence-improvement/BPI_Challenge_2012_pt50.ptml/times.csv",
-    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/baseline/BPI_Challenge_2012_pt50.ptml/times.csv",
-    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/upper_bounds/BPI_Challenge_2012_pt50.ptml/times.csv",
-    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/low_bound/BPI_Challenge_2012_pt50.ptml/times.csv",
-    # "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/without_vector/BPI_Challenge_2012_pt50.ptml/costs.csv",
-]
-
-names = [ 
-    "sequence-improvement",
-    "baseline",
-    "upper_bounds",
-    "low_bound",
-]
-
-summarize_output(paths, names, 105)
+paths = ["/home/matthias/rwth/ba/process-tree-alignments-cpp/output/everything/costs.csv"]
+names = ["main"]
+summarize_output(paths, names, 4382)
 
 # create_ptml()
 # visualize_tree("./data/ptml/BPI_Challenge_2012_pt50.ptml")
 # visualize_tree("./data/ptml/Road_Traffic_Fine_Management_Process_pt50.ptml")
-# feed_compare_data("output.txt")

@@ -443,10 +443,12 @@ const size_t dynAlignLoop(const std::shared_ptr<TreeNode> node, const std::span<
 {
     const auto &children = node->getChildren();
 
-    if (children.size() != 2)
-    {
-        throw std::runtime_error("Loop node with id: " + node->getId() + " does not have exactly two children.");
-    }
+    // TODO temporary solution because we treat xor loops like for loops
+
+    // if (children.size() != 2)
+    // {
+    //     throw std::runtime_error("Loop node with id: " + node->getId() + " does not have exactly two children.");
+    // }
 
     const size_t n = trace.size();
     if (n == 0)
@@ -513,12 +515,26 @@ const size_t dynAlignLoop(const std::shared_ptr<TreeNode> node, const std::span<
     }
 #endif
 
-#if DFS_LOOP == 1
-    // std::cout << "upper smounch" << std::endl;
+    // QR bits are aligned by introducing a temporary sequence node
+    // and using alignSequence
+    // TODO check if better wayle is possible
+
     auto tempNode = std::make_shared<TreeNode>(SEQUENCE);
     tempNode->addChild(children[1]);
     tempNode->addChild(children[0]);
 
+#if TRACE_PRUNING == 1
+    std::unordered_set<int> allActivities;
+    std::set_union(
+        children[0]->getActivities().begin(), children[0]->getActivities().end(),
+        children[1]->getActivities().begin(), children[1]->getActivities().end(),
+        std::inserter(allActivities, allActivities.begin()));
+
+    tempNode->setActivities(allActivities);
+#endif
+
+#if DFS_LOOP == 1
+    // std::cout << "upper smounch" << std::endl;
     std::unordered_map<IntPair, int, PairHash> qrCosts;
 
     std::stack<IntPair> stack;
@@ -608,12 +624,6 @@ const size_t dynAlignLoop(const std::shared_ptr<TreeNode> node, const std::span<
         }
     }
 
-    // QR bits are aligned by introducing a temporary sequence node
-    // and using alignSequence
-    auto tempNode = std::make_shared<TreeNode>(SEQUENCE);
-    tempNode->addChild(children[1]);
-    tempNode->addChild(children[0]);
-
     std::unordered_map<IntPair, size_t, PairHash> qrCosts;
     for (const auto &edge : edges)
     {
@@ -681,14 +691,8 @@ const size_t dynAlignXorLoop(const std::shared_ptr<TreeNode> node, const std::sp
 {
     // TODO temporary solution that fits data set redo(child[0], child[1])
     // this representation should be correct:     // sequence(child[0], redo(child[2], sequence(child[1], child[0])))
-    const auto &children = node->getChildren();
-
-    auto tempRedoLoop = std::make_shared<TreeNode>(REDO_LOOP);
-    tempRedoLoop->addChild(children[0]);
-    tempRedoLoop->addChild(children[1]);
-
-    const size_t cost = dynAlignLoop(tempRedoLoop, trace);
-    return cost;
+    // TODO remove this.
+    return dynAlignLoop(node, trace);
 }
 
 // Activity node alignment - equivalent to _dyn_align_leaf in Python
@@ -712,7 +716,7 @@ const size_t dynAlignSilentActivity(const std::shared_ptr<TreeNode> node, const 
     return trace.size();
 }
 
-const size_t dynAlign(const std::shared_ptr<TreeNode> node, const std::span<const int> trace)
+const size_t dynAlign(const std::shared_ptr<TreeNode> node, std::span<const int> trace)
 {
     const std::string nodeId = node->getId();
 
@@ -724,6 +728,31 @@ const size_t dynAlign(const std::shared_ptr<TreeNode> node, const std::span<cons
     {
         return it->second;
     }
+
+#if TRACE_PRUNING == 1
+    size_t aliens = 0;
+    auto &activities = node->getActivities();
+    std::vector<int> prunedTrace;
+    for (const auto x : trace)
+    {
+        if (activities.count(x) == 0)
+        {
+            for (const int val : trace)
+            {
+                if (activities.count(val) != 0)
+                {
+                    prunedTrace.push_back(val);
+                }
+                else
+                {
+                    aliens++;
+                }
+            }
+            trace = std::span(prunedTrace);
+            break;
+        }
+    }
+#endif
 
     size_t costs;
     switch (node->getOperation())
@@ -754,6 +783,10 @@ const size_t dynAlign(const std::shared_ptr<TreeNode> node, const std::span<cons
     }
 
     const std::vector<int> traceVector(trace.begin(), trace.end());
-    costTable[nodeId][traceVector] = costs;
+    costTable[nodeId][std::move(traceVector)] = costs; 
+#if TRACE_PRUNING
+    return costs + aliens;
+#else
     return costs;
+#endif
 }
