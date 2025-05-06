@@ -3,13 +3,13 @@ from pybind11.setup_helpers import Pybind11Extension, build_ext
 import os
 
 # Use C++20 standard to match CMake configuration
-extra_compile_args = ['-std=c++20']
+extra_compile_args = ["-std=c++20"]
 
 # Get the directory where setup.py is located
 SETUP_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Fix path calculation - assuming setup.py is in the "scripts" folder
-PROJECT_ROOT = os.path.abspath(os.path.join(SETUP_DIR, '..'))
+PROJECT_ROOT = os.path.abspath(os.path.join(SETUP_DIR, ".."))
 PROJECT_OUTPUT_DIR = os.path.join(PROJECT_ROOT, "output")
 
 # Define source files with correct relative paths
@@ -22,14 +22,18 @@ source_files = [
 ]
 
 # Define include directories
-include_dirs = [os.path.join(PROJECT_ROOT, "include"), os.path.join(PROJECT_ROOT, "src")]
+include_dirs = [
+    os.path.join(PROJECT_ROOT, "include"),
+    os.path.join(PROJECT_ROOT, "src"),
+]
 
 # Add definitions to match CMake
 define_macros = [
     ("PROJECT_SOURCE_DIR", f'"{PROJECT_ROOT}"'),
     ("PROJECT_OUTPUT_DIR", f'"{PROJECT_OUTPUT_DIR}"'),
-    ("ENABLE_UPPER_BOUND", 0),  # Add this line
-    ("DFS_LOOP", 0),  # Add this line
+    ("ENABLE_UPPER_BOUND", 1),
+    ("DFS_LOOP", 1),
+    ("SEQUENCE_IMPROVEMENT", 1),
 ]
 
 ext_modules = [
@@ -38,7 +42,7 @@ ext_modules = [
         sources=source_files,
         include_dirs=include_dirs,
         extra_compile_args=extra_compile_args,
-        define_macros=define_macros
+        define_macros=define_macros,
     ),
 ]
 
