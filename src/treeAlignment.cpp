@@ -181,27 +181,20 @@ const size_t dynAlignSequence(const std::shared_ptr<TreeNode> node, const std::s
 
     if (numChildren == 2)
     {
-        // remove elements that are not in the subtree
-        // TODO this way the trace always has to be recomputed? maybe there could be a more efficient solution
-        const std::shared_ptr<IntVec> prunedTrace = pruneTrace(children, trace);
-        const auto prunedTraceSpan = std::span<const int>(*prunedTrace);
-
-        const size_t prunedN = prunedTraceSpan.size();
-        const size_t aliens = traceLength - prunedN;
-
-        const auto segments = getSegmentsForSequence(prunedTraceSpan, node);
+        const auto segments = getSegmentsForSequence(trace, node);
         for (const auto &[split, _] : segments)
         {
-            const auto firstPart = prunedTraceSpan.subspan(0, split);
-            const auto leftCost = dynAlign(children[0], firstPart) + aliens;
+            const auto firstPart = trace.subspan(0, split);
+            const auto leftCost = dynAlign(children[0], firstPart);
 
 #if ENABLE_UPPER_BOUND == 1
+
             if (leftCost >= bestCost)
             {
                 continue;
             }
 #endif
-            const auto secondPart = prunedTraceSpan.subspan(split, prunedN - split);
+            const auto secondPart = trace.subspan(split, traceLength - split);
             const auto rightCost = dynAlign(children[1], secondPart);
 
             bestCost = std::min(leftCost + rightCost, bestCost);
