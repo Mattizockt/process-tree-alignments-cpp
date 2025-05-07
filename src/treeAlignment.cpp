@@ -15,6 +15,8 @@ using StringVec = std::vector<std::string>;
 using IntVec = std::vector<int>;
 using IntPair = std::pair<int, int>;
 
+std::unordered_map<std::string, std::shared_ptr<TreeNode>> tempNodeMap;
+
 // Forward declaration necessary in C++ (unlike Python where functions can be called before definition)
 const size_t dynAlign(std::shared_ptr<TreeNode> node, const std::span<const int> trace);
 
@@ -204,7 +206,6 @@ const size_t dynAlignSequence(const std::shared_ptr<TreeNode> node, const std::s
 
 #if SEQUENCE_IMPROVEMENT == 1
 
-    std::cout << "sequence improv" << std::endl;
     std::unordered_map<int, size_t> activityToChildIndex;
     size_t childIndex = 0;
     for (const auto &child : children)
@@ -290,10 +291,8 @@ const size_t dynAlignSequence(const std::shared_ptr<TreeNode> node, const std::s
     return bestCost;
 
 #else
-    std::cout << "no sequence improv" << std::endl;
 
 #if ENABLE_UPPER_BOUND == 1
-    std::cout << "ENABLE_UPPER_BOUND" << std::endl;
 
     size_t pos = 0;
     size_t old_pos = 0;
@@ -459,7 +458,6 @@ const size_t dynAlignLoop(const std::shared_ptr<TreeNode> node, const std::span<
     size_t upperBound = std::numeric_limits<size_t>::max();
 
 #if ENABLE_UPPER_BOUND == 1
-    // std::cout << "upperbound" <<std::endl;
     const auto &rChildrenActv = children[0]->getActivities();
     const auto firstTraceVal = trace[0];
     const auto lastTraceVal = trace[n - 1];
@@ -517,24 +515,49 @@ const size_t dynAlignLoop(const std::shared_ptr<TreeNode> node, const std::span<
 
     // QR bits are aligned by introducing a temporary sequence node
     // and using alignSequence
-    // TODO check if better wayle is possible
 
-    auto tempNode = std::make_shared<TreeNode>(SEQUENCE);
-    tempNode->addChild(children[1]);
-    tempNode->addChild(children[0]);
+    std::shared_ptr<TreeNode> tempNode;
+    bool newNodeCreated = false;
 
-#if TRACE_PRUNING == 1
-    std::unordered_set<int> allActivities;
-    std::set_union(
-        children[0]->getActivities().begin(), children[0]->getActivities().end(),
-        children[1]->getActivities().begin(), children[1]->getActivities().end(),
-        std::inserter(allActivities, allActivities.begin()));
+#if TEMP_SEQUENCE_STORING == 1
+std::cout << "sh" << std::endl;
+    const std::string tempNodeId = node->getId() + "temp_sequence";
+    auto it = tempNodeMap.find(tempNodeId);
 
-    tempNode->setActivities(allActivities);
+    if (it != tempNodeMap.end())
+    {
+        tempNode = it->second;
+    }
+    else
+    {
+        tempNode = std::make_shared<TreeNode>(SEQUENCE, tempNodeId);
+        tempNodeMap[tempNodeId] = tempNode;
+        newNodeCreated = true;
+    }
+#else
+    tempNode = std::make_shared<TreeNode>(SEQUENCE);
+    newNodeCreated = true;
 #endif
 
+    if (newNodeCreated)
+    {
+
+#if TRACE_PRUNING == 1
+        std::unordered_set<int> allActivities;
+        allActivities.reserve(children[0]->getActivities().size() + children[1]->getActivities().size());
+
+        std::set_union(
+            children[0]->getActivities().begin(), children[0]->getActivities().end(),
+            children[1]->getActivities().begin(), children[1]->getActivities().end(),
+            std::inserter(allActivities, allActivities.begin()));
+
+        tempNode->setActivities(allActivities);
+#endif
+        tempNode->addChild(children[1]);
+        tempNode->addChild(children[0]);
+    }
+
 #if DFS_LOOP == 1
-    // std::cout << "upper smounch" << std::endl;
     std::unordered_map<IntPair, int, PairHash> qrCosts;
 
     std::stack<IntPair> stack;
@@ -783,7 +806,7 @@ const size_t dynAlign(const std::shared_ptr<TreeNode> node, std::span<const int>
     }
 
     const std::vector<int> traceVector(trace.begin(), trace.end());
-    costTable[nodeId][std::move(traceVector)] = costs; 
+    costTable[nodeId][std::move(traceVector)] = costs;
 #if TRACE_PRUNING
     return costs + aliens;
 #else
