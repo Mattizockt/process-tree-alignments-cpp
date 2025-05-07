@@ -29,6 +29,11 @@ TreeNode::TreeNode(Operation operation, int activity)
     }
 }
 
+TreeNode::TreeNode(Operation operation, std::string id)
+    : activities(), children(), activity(activity), operation(operation), id(id)
+{
+}
+
 TreeNode::TreeNode(Operation operation, int activity, std::string id)
     : activities(), children(), activity(activity), operation(operation), id(id)
 {

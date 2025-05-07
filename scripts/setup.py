@@ -35,6 +35,7 @@ define_macros = [
     ("DFS_LOOP", 1),
     ("SEQUENCE_IMPROVEMENT", 1),
     ("TRACE_PRUNING", 1),
+    ("TEMP_SEQUENCE_STORING", 0)
 ]
 
 ext_modules = [
