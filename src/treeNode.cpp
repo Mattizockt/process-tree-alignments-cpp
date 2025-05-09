@@ -67,7 +67,6 @@ void TreeNode::fillActivityMaps()
     auto &currActivities = this->activities;
     for (auto &child : this->getChildren())
     {
-        child->fillActivityMaps();
         for (const auto &activity : child->getActivities())
         {
             currActivities.insert(activity);
