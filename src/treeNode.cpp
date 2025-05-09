@@ -8,69 +8,32 @@
 
 int TreeNode::numberOfNodes = 0;
 
-std::unordered_map<std::string, std::unordered_map<std::vector<int>, int, SpanHash, SpanEqual>> costTable;
-
-// TreeNode::TreeNode()
-//     : activities(), children(), activity(), operation(), id(std::to_string(++numberOfNodes))
-// {
-// }
+std::unordered_map<int, std::unordered_map<std::vector<int>, int, SpanHash, SpanEqual>> costTable;
 
 TreeNode::TreeNode(Operation operation)
-    : activities(), children(), activity(), operation(operation), id(std::to_string(++numberOfNodes))
+    : activities(), children(), operation(operation), id(++numberOfNodes)
 {
-}
-
-TreeNode::TreeNode(Operation operation, int activity)
-    : activities(), children(), activity(activity), operation(operation), id(std::to_string(++numberOfNodes))
-{
-    if (operation == ACTIVITY)
-    {
-        activities.insert(activity);
+    if (operation == ACTIVITY) {
+        activities.insert(this->getId());
     }
 }
 
-TreeNode::TreeNode(Operation operation, std::string id)
-    : activities(), children(), activity(activity), operation(operation), id(id)
+TreeNode::TreeNode(Operation operation, int id)
+    : activities(), children(), operation(operation), id(id)
 {
-}
-
-TreeNode::TreeNode(Operation operation, int activity, std::string id)
-    : activities(), children(), activity(activity), operation(operation), id(id)
-{
-    if (operation == ACTIVITY)
-    {
-        activities.insert(activity);
+        if (operation == ACTIVITY) {
+        activities.insert(id);
     }
 }
 
-// int TreeNode::getNumberOfNodes()
-// {
-//     return numberOfNodes;
-// }
-
-std::string TreeNode::getId() const
+int TreeNode::getId() const
 {
     return id;
 }
 
-// void TreeNode::setId(std::string newId)
-// {
-//     id = newId;
-// }
-
 Operation TreeNode::getOperation() const
 {
     return operation;
-}
-
-// void TreeNode::setOperation(Operation newOperation)
-// {
-//     operation = newOperation;
-// }
-
-int TreeNode::getActivity() const
-{
-    return activity;
 }
 
 void TreeNode::setActivities(std::unordered_set<int> newActivities)
@@ -83,7 +46,6 @@ void TreeNode::addChild(std::shared_ptr<TreeNode> child)
     children.push_back(child);
 }
 
-// all activities of this node and its successor
 const std::unordered_set<int> &TreeNode::getActivities() const
 {
     return activities;
@@ -113,13 +75,23 @@ void TreeNode::fillActivityMaps()
     }
 }
 
-// void TreeNode::printTree(int level)
-// {
-//     std::string activityName = this->activity != -1 ? activityVector[this->activity] : "None";
+void TreeNode::printTree(int level)
+{
+    std::string activityName = "None"; // Default if activity is -1 or not found
 
-//     std::cout << std::string(level * 2, ' ') << "Node ID: " << this->getId() << ", Operation: " << this->getOperation() << ", Activity (if exists): " << activityName << std::endl;
-//     for (auto &child : this->getChildren())
-//     {
-//         child->printTree(level + 1);
-//     }
-// }
+    if (this->operation == ACTIVITY) {
+        auto it = idToActivity.find(this->getId());
+        if (it != idToActivity.end()) {
+            activityName = it->second; // Found the activity, get its name
+        } else {
+            activityName = "Unknown Activity (ID: " + std::to_string(this->getId()) + ")";
+        }
+    }
+
+    std::cout << std::string(level * 2, ' ') << "Node ID: " << this->getId() << ", Operation: " << this->getOperation() << ", Activity (if exists): " << activityName << std::endl;
+
+    for (auto &child : this->getChildren())
+    {
+        child->printTree(level + 1);
+    }
+}

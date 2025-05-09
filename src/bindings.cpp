@@ -19,10 +19,9 @@ void AlignmentWrapper::setTrace(const std::vector<std::string> newTrace)
     std::vector<int> intTrace = convertStringTrace(newTrace);
     traceContent = intTrace;
 }
-
-void AlignmentWrapper::loadTree(std::string treePath)
+void AlignmentWrapper::loadTree(std::string tree)
 {
-    processTree = parsePtml(treePath);
+    processTree = parseProcessTreeString(tree);
 }
 
 size_t AlignmentWrapper::align() const

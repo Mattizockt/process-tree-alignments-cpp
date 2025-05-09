@@ -88,10 +88,12 @@ class ProcessTreeManager:
 
 
 class AlignmentEvaluator:
-    def __init__(self, ptml_path):
+    def __init__(self):
         self.aligner = alignment.AlignmentWrapper()
-        self.aligner.loadTree(str(ptml_path / "BPI_Challenge_2012_pt50.ptml"))
         self.random_generator = random.Random(12345)
+    
+    def load_tree(self, treeString):
+        self.aligner.loadTree(treeString)
 
     def compare_cpp_alignments(self, trace_as_list, repeats=1):
         self.aligner.setTrace(list(trace_as_list))
@@ -349,9 +351,13 @@ def main():
     evaluate_event_logs = data_manager.load_event_logs()
 
     # loads 50 tree at the mom
-    evaluator = AlignmentEvaluator(data_manager.ptml_path)
+    # TODO modify that tree string is loaded
+    evaluator = AlignmentEvaluator()
 
-    for benchmark in evaluate_event_logs:
+    for i, benchmark in enumerate(evaluate_event_logs):
+        if i != 3:
+            continue
+        evaluator.load_tree(str(benchmark["process_tree"]))
         evaluator.run_evaluation(benchmark, data_manager.result_path)
         # evaluator.run_cpp_evaluation(benchmark, data_manager.result_path)
 

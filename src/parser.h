@@ -6,10 +6,8 @@
 #include <string>
 
 extern std::unordered_map<std::string, int> activitiesToInt;
-extern std::vector<std::string> activityVector;
+extern std::unordered_map<int, std::string> idToActivity;
 
 std::vector<int> convertStringTrace(const std::vector<std::string> &trace);
-std::vector<std::vector<int>> parseXes(const std::string &filePath);
-std::shared_ptr<TreeNode> parsePtml(const std::string &filePath);
-void parseAndAlign(const std::string &xesPath, const std::string &ptmlPath);
+std::shared_ptr<TreeNode> parseProcessTreeString(const std::string& treeString);
 #endif // PARSER_H
