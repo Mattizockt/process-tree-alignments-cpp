@@ -15,7 +15,7 @@ using StringVec = std::vector<std::string>;
 using IntVec = std::vector<int>;
 using IntPair = std::pair<int, int>;
 
-std::unordered_map<std::string, std::shared_ptr<TreeNode>> tempNodeMap;
+std::unordered_map<int, std::shared_ptr<TreeNode>> tempNodeMap;
 
 // Forward declaration necessary in C++ (unlike Python where functions can be called before definition)
 const size_t dynAlign(std::shared_ptr<TreeNode> node, const std::span<const int> trace);
@@ -181,6 +181,37 @@ const size_t dynAlignSequence(const std::shared_ptr<TreeNode> node, const std::s
         return dynAlign(children[0], trace);
     }
 
+    // TODO has to be pushed up a bit.
+#if ENABLE_UPPER_BOUND == 1
+
+    size_t pos = 0;
+    size_t old_pos = 0;
+    bestCost = 0;
+
+    // Try greedy approach first - attempt to partition trace by activity membership
+    if (traceLength > numChildren &&
+        children[0]->getActivities().count(trace[0]) &&
+        children.back()->getActivities().count(trace.back()))
+    {
+        for (const auto &child : children)
+        {
+            while (pos < trace.size() && child->getActivities().count(trace[pos]))
+            {
+                pos += 1;
+            }
+            const auto subTrace = trace.subspan(old_pos, pos - old_pos);
+            bestCost += dynAlign(child, subTrace);
+            old_pos = pos;
+        }
+    }
+
+    if (pos < trace.size())
+    {
+        bestCost = std::numeric_limits<size_t>::max();
+    }
+
+#endif
+
     if (numChildren == 2)
     {
         const auto segments = getSegmentsForSequence(trace, node);
@@ -291,36 +322,6 @@ const size_t dynAlignSequence(const std::shared_ptr<TreeNode> node, const std::s
     return bestCost;
 
 #else
-
-#if ENABLE_UPPER_BOUND == 1
-
-    size_t pos = 0;
-    size_t old_pos = 0;
-    bestCost = 0;
-
-    // Try greedy approach first - attempt to partition trace by activity membership
-    if (traceLength > numChildren &&
-        children[0]->getActivities().count(trace[0]) &&
-        children.back()->getActivities().count(trace.back()))
-    {
-        for (const auto &child : children)
-        {
-            while (pos < trace.size() && child->getActivities().count(trace[pos]))
-            {
-                pos += 1;
-            }
-            const auto subTrace = trace.subspan(old_pos, pos - old_pos);
-            bestCost += dynAlign(child, subTrace);
-            old_pos = pos;
-        }
-    }
-
-    if (pos < trace.size())
-    {
-        bestCost = std::numeric_limits<size_t>::max();
-    }
-
-#endif
 
     // special case for binary sequence operator (common case optimization)
     std::vector<IntPair> vertices;
@@ -520,8 +521,7 @@ const size_t dynAlignLoop(const std::shared_ptr<TreeNode> node, const std::span<
     bool newNodeCreated = false;
 
 #if TEMP_SEQUENCE_STORING == 1
-std::cout << "sh" << std::endl;
-    const std::string tempNodeId = node->getId() + "temp_sequence";
+    const int tempNodeId = node->getId() * -1;
     auto it = tempNodeMap.find(tempNodeId);
 
     if (it != tempNodeMap.end())
@@ -714,7 +714,6 @@ const size_t dynAlignXorLoop(const std::shared_ptr<TreeNode> node, const std::sp
 {
     // TODO temporary solution that fits data set redo(child[0], child[1])
     // this representation should be correct:     // sequence(child[0], redo(child[2], sequence(child[1], child[0])))
-    // TODO remove this.
     return dynAlignLoop(node, trace);
 }
 
@@ -722,7 +721,7 @@ const size_t dynAlignXorLoop(const std::shared_ptr<TreeNode> node, const std::sp
 // C++ needs to explicitly check if element exists in vector using std::find
 const size_t dynAlignActivity(const std::shared_ptr<TreeNode> node, const std::span<const int> trace)
 {
-    const int &activity = node->getActivity();
+    const int &activity = node->getId();
 
     if (std::find(trace.begin(), trace.end(), activity) == trace.end())
     {
@@ -741,7 +740,7 @@ const size_t dynAlignSilentActivity(const std::shared_ptr<TreeNode> node, const 
 
 const size_t dynAlign(const std::shared_ptr<TreeNode> node, std::span<const int> trace)
 {
-    const std::string nodeId = node->getId();
+    const int nodeId = node->getId();
 
     auto [mapIt, wasInserted] = costTable.try_emplace(nodeId);
     auto &innerMap = mapIt->second;

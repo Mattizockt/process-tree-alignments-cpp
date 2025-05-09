@@ -114,7 +114,7 @@ std::string visualizeIntTrace(const std::vector<int> &vec)
     for (size_t i = 0; i < vec.size(); ++i)
     {
         result += "'";
-        result += activityVector[vec[i]];
+        result += idToActivity[vec[i]];
         result += "'";
         if (i < vec.size() - 1)
         {
@@ -131,7 +131,7 @@ std::string visualizeSpanTrace(const std::span<const int> span)
     for (size_t i = 0; i < span.size(); ++i)
     {
         result += "'";
-        result += activityVector[span[i]];
+        result += idToActivity[span[i]];
         result += "'";
         if (i < span.size() - 1)
         {

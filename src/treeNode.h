@@ -63,7 +63,7 @@ struct SpanEqual
 };
 
 // node id -> (trace -> alignmentcost)
-extern std::unordered_map<std::string, std::unordered_map<std::vector<int>, int, SpanHash, SpanEqual>> costTable;
+extern std::unordered_map<int, std::unordered_map<std::vector<int>, int, SpanHash, SpanEqual>> costTable;
 
 enum Operation
 {
@@ -79,22 +79,13 @@ enum Operation
 class TreeNode
 {
 public:
-    // TreeNode();
     TreeNode(Operation operation);
-    TreeNode(Operation operation, int activity);
-    TreeNode(Operation operation, std::string id);
-    TreeNode(Operation operation, int activity, std::string id);
 
-    // static int
-    // getNumberOfNodes();
+    TreeNode(Operation operation, int id);
 
-    std::string getId() const;
-    // void setId(std::string newId);
+    int getId() const;
 
     Operation getOperation() const;
-    // void setOperation(Operation newOperation);
-
-    int getActivity() const;
 
     const std::unordered_set<int> &getActivities() const;
 
@@ -106,13 +97,12 @@ public:
 
     void fillActivityMaps();
 
-    // void printTree(int level = 0);
+    void printTree(int level = 0);
 
 private:
     static int numberOfNodes;
-    std::string id;
+    int id;
     Operation operation;
-    int activity;
     std::unordered_set<int> activities;
     std::vector<std::shared_ptr<TreeNode>> children;
 };
