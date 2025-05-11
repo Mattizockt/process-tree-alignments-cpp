@@ -15,7 +15,7 @@ import pm4py
 import random
 import time
 import json
-
+import os
 
 class ProcessTreeManager:
     @staticmethod
@@ -124,18 +124,20 @@ class AlignmentEvaluator:
             cpp_duration = cpp_end - cpp_start
             min_cpp_dur = min(min_cpp_dur, cpp_duration)
 
-            # py_start = time.time()
-            # py_cost = dyn_align(
-            #     self.benchmark["process_tree_with_ids"],
-            #     self.letters_dict,
-            #     trace_as_list,
-            #     self.subsequence_dict,
-            # )
-            # py_end = time.time()
-            # py_duration = py_end - py_start
-            # min_py_dur = min(min_py_dur, py_duration)
+        # py_start = time.time()
+        # py_cost = dyn_align(
+        #     self.benchmark["process_tree_with_ids"],
+        #     self.letters_dict,
+        #     trace_as_list,
+        #     self.subsequence_dict,
+        # )
+        # py_end = time.time()
+        # py_duration = py_end - py_start
+        # min_py_dur = min(min_py_dur, py_duration)
 
         return {
+            # "cpp_cost": py_cost,
+            # "cpp_duration": min_py_dur,
             "cpp_cost": cpp_cost,
             "cpp_duration": min_cpp_dur,
             # "py_cost": py_cost,
@@ -168,13 +170,15 @@ class AlignmentEvaluator:
         trace_variants = list(zip(*get_variants(benchmark["event_log"], None)))
         self.random_generator.shuffle(trace_variants)
 
+        output_path = result_path / benchmark["tree_name"]
+        output_path.mkdir(exist_ok=True)
         results = []
         for variant, trace in trace_variants:
             trace_as_list = tuple([event["concept:name"] for event in trace])
-            result = self.compare_alignments(trace_as_list, 2)
+            result = self.compare_alignments(trace_as_list, 1)
             results.append(result)
 
-            with open(result_path / "costs.csv", "a") as file:
+            with open(output_path / "costs.csv", "a") as file:
                 file.write(
                     f"{result['cpp_cost']}, {result['cpp_duration']}, "
                     # f"{result['py_cost']}, {result['py_duration']},
@@ -210,37 +214,6 @@ class DataManager:
                 results.append(events)
 
         return results
-
-    def load_special_event_logs(self):
-        evaluate_event_logs = []
-        path = (
-            "/home/matthias/rwth/ba/process-tree-alignments-cpp/data/outliers/main.csv"
-        )
-        result_path = self.result_path / "outliers"
-        event_logs = list(self.parse_event_csv(path))
-
-        for noise_threshold, file_tag in [(0.5, "_pt50")]:
-            ptml_file = Path(
-                "/home/matthias/rwth/ba/process-tree-alignments-cpp/data/ptml/BPI_Challenge_2012_pt50.ptml"
-            )
-
-            process_tree = pm4py.read_ptml(str(ptml_file))
-            process_tree_with_ids = pm4py.read_ptml(str(ptml_file))
-
-            print(f"Adding benchmark: {ptml_file.stem}")
-            for event_log in event_logs:
-                evaluate_event_logs.append(
-                    {
-                        "event_log": event_log,
-                        "process_tree": process_tree,
-                        "process_tree_with_ids": process_tree_with_ids,
-                        "repeat": 5,
-                        "result_path": result_path,
-                        "file_tag": file_tag,
-                    }
-                )
-
-        return evaluate_event_logs
 
     def load_event_logs(self):
         evaluate_event_logs = []
@@ -286,6 +259,7 @@ class DataManager:
                         "repeat": 3,
                         "result_path": cur_path,
                         "file_tag": file_tag,
+                        "tree_name" : f"{xes_file.stem}{file_tag}",
                     }
                 )
 
@@ -355,11 +329,8 @@ def main():
     evaluator = AlignmentEvaluator()
 
     for i, benchmark in enumerate(evaluate_event_logs):
-        if i != 3:
-            continue
         evaluator.load_tree(str(benchmark["process_tree"]))
         evaluator.run_evaluation(benchmark, data_manager.result_path)
-        # evaluator.run_cpp_evaluation(benchmark, data_manager.result_path)
 
 
 if __name__ == "__main__":

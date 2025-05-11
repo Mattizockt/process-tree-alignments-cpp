@@ -219,7 +219,6 @@ std::shared_ptr<TreeNode> parseNode(const std::string &treeString, size_t &pos)
             tempNode->addChild(children[1]);
             tempNode->addChild(children[0]);
 #if TRACE_PRUNING == 1
-            std::cout << tempNodeId << std::endl;
             std::unordered_set<int> allActivities;
             allActivities.reserve(children[0]->getActivities().size() + children[1]->getActivities().size());
 
@@ -294,9 +293,6 @@ std::shared_ptr<TreeNode> parseProcessTreeString(const std::string &treeString)
     {
         root->fillActivityMaps(); // Traverses the tree to build complete activity maps
     }
-
-    root->printTree();
-    std::cout << std::endl;
 
     return root; // Return the root node
 }
