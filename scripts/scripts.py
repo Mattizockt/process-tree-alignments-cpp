@@ -110,7 +110,7 @@ def compare_output(paths: list[str], numData: int = 35):
 
 
 # read in output and plot it on graph
-def summarize_output(paths: list[str], names : list[str], numData: int = 35):
+def summarize_output(paths: list[str], names: list[str], numData: int = 35):
     # Initialize the figure once, outside the loop
     plt.figure(figsize=(10, 6))
 
@@ -152,9 +152,7 @@ def summarize_output(paths: list[str], names : list[str], numData: int = 35):
     for i, data in enumerate(graphs):
         x_values = np.arange(len(data))
         color = colors[i % len(colors)]
-        plt.plot(
-            x_values, data, color=color, linewidth=2, marker="o", label=names[i]
-        )
+        plt.plot(x_values, data, color=color, linewidth=2, marker="o", label=names[i])
 
     # Add labels and styling
     plt.xlabel("Position (i)")
@@ -166,8 +164,12 @@ def summarize_output(paths: list[str], names : list[str], numData: int = 35):
     plt.show()
 
 
-paths = ["/home/matthias/rwth/ba/process-tree-alignments-cpp/output/everything/costs.csv"]
-names = ["main"]
+paths = [
+    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/python_baseline/BPI_Challenge_2012_pt50/costs.csv",
+    "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/c++_best/BPI_Challenge_2012_pt50/costs.csv",
+]
+
+names = ["main", "C++"]
 summarize_output(paths, names, 4382)
 
 # create_ptml()

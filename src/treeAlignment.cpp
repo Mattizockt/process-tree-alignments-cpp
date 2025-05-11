@@ -180,10 +180,6 @@ const size_t dynAlignSequence(const std::shared_ptr<TreeNode> node, const std::s
 
     // TODO has to be pushed up a bit.
 #if ENABLE_UPPER_BOUND == 1
-    // std::cout << visualizeSpanTrace(trace) << std::endl;
-    // std::cout << "0" << std::endl;
-    // std::cout << children.size() << std::endl;
-    // std::cout << node->getId() << std::endl;
 
     size_t pos = 0;
     size_t old_pos = 0;
