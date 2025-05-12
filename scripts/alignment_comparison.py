@@ -228,9 +228,9 @@ class DataManager:
 
             event_log = pm4py.read_xes(str(xes_file))
             for noise_threshold, file_tag in [
-                (0, "_pt00"),
-                (0, "_pt10"),
-                (0, "_pt25"),
+                (0.0, "_pt00"),
+                (0.1, "_pt10"),
+                (0.25, "_pt25"),
                 (0.5, "_pt50"),
             ]:
                 ptml_file = self.ptml_path / f"{xes_file.stem}{file_tag}.ptml"
