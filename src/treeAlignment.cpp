@@ -178,8 +178,7 @@ const size_t dynAlignSequence(const std::shared_ptr<TreeNode> node, const std::s
         return dynAlign(children[0], trace);
     }
 
-    // TODO has to be pushed up a bit.
-#if ENABLE_UPPER_BOUND == 1
+#if BRUTE_FORCE == 1
 
     size_t pos = 0;
     size_t old_pos = 0;
@@ -204,15 +203,13 @@ const size_t dynAlignSequence(const std::shared_ptr<TreeNode> node, const std::s
 
     if (pos < trace.size())
     {
-        bestCost = std::numeric_limits<size_t>::max();
+        bestCost += trace.size() - pos;
     }
 
 #endif
 
     if (numChildren == 2)
     {
-        // std::cout << "1" << std::endl;
-
         const auto segments = getSegmentsForSequence(trace, node);
         for (const auto &[split, _] : segments)
         {
@@ -236,8 +233,6 @@ const size_t dynAlignSequence(const std::shared_ptr<TreeNode> node, const std::s
     }
 
 #if SEQUENCE_IMPROVEMENT == 1
-
-    // std::cout << "2" << std::endl;
 
     std::unordered_map<int, size_t> activityToChildIndex;
     size_t childIndex = 0;
@@ -455,7 +450,7 @@ const size_t dynAlignLoop(const std::shared_ptr<TreeNode> node, const std::span<
     // TODO upperbound is not used yet
     size_t upperBound = std::numeric_limits<size_t>::max();
 
-#if ENABLE_UPPER_BOUND == 1
+#if BRUTE_FORCE == 1
     const auto &rChildrenActv = children[0]->getActivities();
     const auto firstTraceVal = trace[0];
     const auto lastTraceVal = trace[n - 1];
