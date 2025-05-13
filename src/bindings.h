@@ -9,17 +9,15 @@
 class AlignmentWrapper
 {
 private:
-    std::vector<int> traceContent;
     std::shared_ptr<TreeNode> processTree;
 
 public:
     AlignmentWrapper();
 
-    void setTrace(const std::vector<std::string> newTrace);
+    size_t align(const std::vector<std::string> newTrace) const;
 
     void loadTree(std::string treePath);
 
-    size_t align() const;
 };
 
 #endif
