@@ -14,7 +14,7 @@ private:
 public:
     AlignmentWrapper();
 
-    size_t align(const std::vector<std::string> newTrace) const;
+    int align(const std::vector<std::string> newTrace) const;
 
     void loadTree(std::string treePath);
 

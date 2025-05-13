@@ -22,13 +22,13 @@ void AlignmentWrapper::loadTree(std::string tree)
     processTree = parseProcessTreeString(tree);
 }
 
-size_t AlignmentWrapper::align(const std::vector<std::string> newTrace) const
+int AlignmentWrapper::align(const std::vector<std::string> newTrace) const
 {
     std::vector<int> intTrace = convertStringTrace(newTrace);
     std::span<const int> trace = intTrace;
 
     stop_flag.store(false);
-    int timeout_seconds = 10;
+    int timeout_seconds = 60;
 
     costTable.clear();
     std::future<size_t> result_future = std::async(std::launch::async, dynAlign, std::ref(processTree), std::ref(trace));
@@ -41,8 +41,7 @@ size_t AlignmentWrapper::align(const std::vector<std::string> newTrace) const
     else
     {
         stop_flag.store(true);
-        std::cout << "error";
-        return std::numeric_limits<size_t>::max();
+        return -1;
     }
     // const size_t cost = dynAlign(processTree, trace);
     // return cost;
