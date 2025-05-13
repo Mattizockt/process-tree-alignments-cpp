@@ -7,6 +7,9 @@
 #include <pybind11/stl.h>
 #include <span>
 #include <string>
+#include <atomic>
+#include <thread>
+#include <future>
 
 namespace py = pybind11;
 
@@ -14,22 +17,35 @@ AlignmentWrapper::AlignmentWrapper()
 {
 }
 
-void AlignmentWrapper::setTrace(const std::vector<std::string> newTrace)
-{
-    std::vector<int> intTrace = convertStringTrace(newTrace);
-    traceContent = intTrace;
-}
 void AlignmentWrapper::loadTree(std::string tree)
 {
     processTree = parseProcessTreeString(tree);
 }
 
-size_t AlignmentWrapper::align() const
+size_t AlignmentWrapper::align(const std::vector<std::string> newTrace) const
 {
-    std::span<const int> trace = traceContent;
+    std::vector<int> intTrace = convertStringTrace(newTrace);
+    std::span<const int> trace = intTrace;
+
+    stop_flag.store(false);
+    int timeout_seconds = 10;
+
     costTable.clear();
-    const size_t cost = dynAlign(processTree, trace);
-    return cost;
+    std::future<size_t> result_future = std::async(std::launch::async, dynAlign, std::ref(processTree), std::ref(trace));
+    std::future_status status = result_future.wait_for(std::chrono::seconds(timeout_seconds));
+
+    if (status == std::future_status::ready)
+    {
+        return result_future.get();
+    }
+    else
+    {
+        stop_flag.store(true);
+        std::cout << "error";
+        return std::numeric_limits<size_t>::max();
+    }
+    // const size_t cost = dynAlign(processTree, trace);
+    // return cost;
 }
 
 PYBIND11_MODULE(alignment, m)
@@ -38,7 +54,6 @@ PYBIND11_MODULE(alignment, m)
 
     py::class_<AlignmentWrapper>(m, "AlignmentWrapper")
         .def(py::init<>())
-        .def("setTrace", &AlignmentWrapper::setTrace, "Set the trace from a vector of strings. Don't forget to set a tree first before doing this.")
         .def("loadTree", &AlignmentWrapper::loadTree, "Load a tree from a file path")
         .def("align", &AlignmentWrapper::align, "Perform alignment and return the cost");
 }

@@ -36,9 +36,9 @@ def create_ptml():
         if not (file := ptml_path / f"{xes_file.stem}.ptml").is_file():
             # Define noise threshold levels and corresponding filename suffixes
             ptml_variants = [
-                (0.0, "_pt00"),  # No noise filtering (0%)
-                (0.1, "_pt10"),  # Low noise filtering (10%)
-                (0.25, "_pt25"),  # Medium noise filtering (25%)
+                # (0.0, "_pt00"),  # No noise filtering (0%)
+                # (0.1, "_pt10"),  # Low noise filtering (10%)
+                # (0.25, "_pt25"),  # Medium noise filtering (25%)
                 (0.5, "_pt50"),  # High noise filtering (50%)
             ]
 
@@ -169,9 +169,9 @@ paths = [
     "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/c++_best/BPI_Challenge_2012_pt50/costs.csv",
 ]
 
-names = ["main", "C++"]
-summarize_output(paths, names, 4382)
+# names = ["main", "C++"]
+# summarize_output(paths, names, 4382)
 
-# create_ptml()
+create_ptml()
 # visualize_tree("./data/ptml/BPI_Challenge_2012_pt50.ptml")
 # visualize_tree("./data/ptml/Road_Traffic_Fine_Management_Process_pt50.ptml")

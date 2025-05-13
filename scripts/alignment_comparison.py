@@ -8,14 +8,11 @@ from pm4py.objects.log.obj import EventLog
 from pm4py.objects.process_tree.utils.generic import is_leaf
 from python_dyn_align import dyn_align
 import alignment
-import re
-import csv
 import pandas as pd
 import pm4py
 import random
 import time
-import json
-import os
+import random
 
 class ProcessTreeManager:
     @staticmethod
@@ -95,31 +92,12 @@ class AlignmentEvaluator:
     def load_tree(self, treeString):
         self.aligner.loadTree(treeString)
 
-    def compare_cpp_alignments(self, trace_as_list, repeats=1):
-        self.aligner.setTrace(list(trace_as_list))
-
-        min_cpp_dur = float("inf")
-        for i in range(repeats):
-            cpp_start = time.time()
-            cpp_cost = self.aligner.align()
-            cpp_end = time.time()
-            cpp_duration = cpp_end - cpp_start
-            min_cpp_dur = min(min_cpp_dur, cpp_duration)
-
-        return {
-            "cpp_cost": cpp_cost,
-            "cpp_duration": min_cpp_dur,
-            "trace": trace_as_list,
-        }
-
     def compare_alignments(self, trace_as_list, repeats=1):
-        self.aligner.setTrace(list(trace_as_list))
-
         min_cpp_dur = float("inf")
         # min_py_dur = float("inf")
         for _ in range(repeats):
             cpp_start = time.time()
-            cpp_cost = self.aligner.align()
+            cpp_cost = self.aligner.align(trace_as_list)
             cpp_end = time.time()
             cpp_duration = cpp_end - cpp_start
             min_cpp_dur = min(min_cpp_dur, cpp_duration)
@@ -145,17 +123,6 @@ class AlignmentEvaluator:
             "trace": trace_as_list,
         }
 
-    def run_cpp_evaluation(self, benchmark, result_path):
-        self.benchmark = benchmark
-        # ProcessTreeManager.add_id_to_process_tree(benchmark["process_tree_with_ids"])
-        result = self.compare_cpp_alignments(benchmark["event_log"], 5)
-
-        with open(result_path / "costs.csv", "a") as file:
-            file.write(
-                f"{result['cpp_cost']}, {result['cpp_duration']}, "
-                f"{result['trace']}\n"
-            )
-
     def run_evaluation(self, benchmark, result_path):
         self.benchmark = benchmark
         ProcessTreeManager.add_id_to_process_tree(benchmark["process_tree_with_ids"])
@@ -166,16 +133,11 @@ class AlignmentEvaluator:
             benchmark["process_tree_with_ids"]
         )
 
-        # get variants doesn't work yet
-        trace_variants = list(zip(*get_variants(benchmark["event_log"], None)))
-        self.random_generator.shuffle(trace_variants)
-
         output_path = result_path / benchmark["tree_name"]
         output_path.mkdir(exist_ok=True)
         results = []
-        for variant, trace in trace_variants:
-            trace_as_list = tuple([event["concept:name"] for event in trace])
-            result = self.compare_alignments(trace_as_list, 1)
+        for trace in benchmark["event_log"]:
+            result = self.compare_alignments(trace, benchmark["repeat"])
             results.append(result)
 
             with open(output_path / "costs.csv", "a") as file:
@@ -190,32 +152,14 @@ class AlignmentEvaluator:
 
 class DataManager:
     def __init__(self):
+        random.seed(123)
         self.current_dir = Path.cwd()
         self.xes_path = self.current_dir / "data" / "xes"
         self.ptml_path = self.current_dir / "data" / "ptml"
         self.result_path = Path("output") / datetime.now().strftime("%Y%m%d%H%M%S")
         self.result_path.mkdir(exist_ok=True)
 
-    def parse_event_csv(self, file_path):
-        results = []
-
-        with open(file_path, "r") as file:
-            for line in file:
-                if not line.strip():
-                    continue
-
-                parts = line.split(
-                    ",", 4
-                )  # Split by comma, but only for the first 4 commas
-
-                tuple_part = parts[4].strip()
-                events = re.findall(r"'([^']*)'", tuple_part)
-
-                results.append(events)
-
-        return results
-
-    def load_event_logs(self):
+    def load_event_logs(self, num_traces=1000):
         evaluate_event_logs = []
 
         for xes_file in self.xes_path.glob("*.xes"):
@@ -226,11 +170,15 @@ class DataManager:
             cur_path.mkdir(exist_ok=True)
             print(f"Processing {xes_file.stem}")
 
-            event_log = pm4py.read_xes(str(xes_file))
+            unparsed_event_logs = pm4py.read_xes(str(xes_file))
+            unsampled_event_logs = [x[0] for x in zip(*get_variants(unparsed_event_logs, None))]
+            tuple_event_logs = random.sample(unsampled_event_logs, num_traces)
+            event_logs = [list(x) for x in tuple_event_logs]
+
             for noise_threshold, file_tag in [
-                (0.0, "_pt00"),
-                (0.1, "_pt10"),
-                (0.25, "_pt25"),
+                # (0.0, "_pt00"),
+                # (0.1, "_pt10"),
+                # (0.25, "_pt25"),
                 (0.5, "_pt50"),
             ]:
                 ptml_file = self.ptml_path / f"{xes_file.stem}{file_tag}.ptml"
@@ -240,7 +188,7 @@ class DataManager:
                     process_tree_with_ids = pm4py.read_ptml(str(ptml_file))
                 else:
                     process_tree = ProcessTreeManager.discover_process_tree(
-                        event_log, noise_threshold=noise_threshold
+                        event_logs, noise_threshold=noise_threshold
                     )
                     pm4py.write_ptml(
                         process_tree,
@@ -253,10 +201,10 @@ class DataManager:
                 print(f"Adding benchmark: {ptml_file.stem}")
                 evaluate_event_logs.append(
                     {
-                        "event_log": event_log,
+                        "event_log": event_logs,
                         "process_tree": process_tree,
                         "process_tree_with_ids": process_tree_with_ids,
-                        "repeat": 3,
+                        "repeat": 1,
                         "result_path": cur_path,
                         "file_tag": file_tag,
                         "tree_name" : f"{xes_file.stem}{file_tag}",
@@ -266,72 +214,12 @@ class DataManager:
         return evaluate_event_logs
 
 
-def calculate_percentage_of_max(file_path):
-    try:
-        with open(file_path, "r") as f:
-            data = json.load(f)
-    except FileNotFoundError:
-        print(f"Error: File not found at {file_path}", file=sys.stderr)
-        return None
-    except json.JSONDecodeError:
-        print(
-            f"Error: Could not decode JSON from {file_path}. Please ensure it's valid JSON.",
-            file=sys.stderr,
-        )
-        return None
-    except Exception as e:
-        print(
-            f"An unexpected error occurred while reading the file: {e}", file=sys.stderr
-        )
-        return None
-
-    if not isinstance(data, dict):
-        print(
-            f"Error: The content of {file_path} is not a JSON object (dictionary).",
-            file=sys.stderr,
-        )
-        return {}  # Return empty dictionary if not a dict
-
-    # Filter out non-numeric values just in case, although the example shows numbers
-    numeric_values = [v for v in data.values() if isinstance(v, (int, float))]
-
-    if not numeric_values:
-        print("No numeric values found in the dictionary.", file=sys.stderr)
-        return {
-            key: 0.0 for key in data.keys()
-        }  # Return 0% for all if no max can be determined
-
-    max_time = max(numeric_values)
-
-    if max_time == 0:
-        # Avoid division by zero if the maximum value is 0
-        percentage_data = {key: 0.0 for key in data.keys()}
-    else:
-        # Calculate percentages
-        percentage_data = {}
-        for key, value in data.items():
-            if isinstance(value, (int, float)):
-                percentage_data[key] = (value / max_time) * 100
-            else:
-                # Handle keys with non-numeric values if necessary, setting percentage to 0 or similar
-                percentage_data[key] = 0.0  # Or handle as appropriate
-
-    return percentage_data
-
-
-def main():
+if __name__ == "__main__":
     data_manager = DataManager()
-    # evaluate_event_logs = data_manager.load_special_event_logs()
     evaluate_event_logs = data_manager.load_event_logs()
 
-    # loads 50 tree at the mom
-    # TODO modify that tree string is loaded
     evaluator = AlignmentEvaluator()
 
     for i, benchmark in enumerate(evaluate_event_logs):
         evaluator.load_tree(str(benchmark["process_tree"]))
         evaluator.run_evaluation(benchmark, data_manager.result_path)
-
-
-if __name__ == "__main__":
-    main()
