@@ -94,7 +94,7 @@ class AlignmentEvaluator:
 
     def compare_alignments(self, trace_as_list, repeats=1):
         min_cpp_dur = float("inf")
-        # min_py_dur = float("inf")
+        min_py_dur = float("inf")
         for _ in range(repeats):
             cpp_start = time.time()
             cpp_cost = self.aligner.align(trace_as_list)
@@ -102,24 +102,24 @@ class AlignmentEvaluator:
             cpp_duration = cpp_end - cpp_start
             min_cpp_dur = min(min_cpp_dur, cpp_duration)
 
-        # py_start = time.time()
-        # py_cost = dyn_align(
-        #     self.benchmark["process_tree_with_ids"],
-        #     self.letters_dict,
-        #     trace_as_list,
-        #     self.subsequence_dict,
-        # )
-        # py_end = time.time()
-        # py_duration = py_end - py_start
-        # min_py_dur = min(min_py_dur, py_duration)
+        py_start = time.time()
+        py_cost = dyn_align(
+            self.benchmark["process_tree_with_ids"],
+            self.letters_dict,
+            trace_as_list,
+            self.subsequence_dict,
+        )
+        py_end = time.time()
+        py_duration = py_end - py_start
+        min_py_dur = min(min_py_dur, py_duration)
 
         return {
-            # "cpp_cost": py_cost,
-            # "cpp_duration": min_py_dur,
+            "cpp_cost": py_cost,
+            "cpp_duration": min_py_dur,
             "cpp_cost": cpp_cost,
             "cpp_duration": min_cpp_dur,
-            # "py_cost": py_cost,
-            # "py_duration": min_py_dur,
+            "py_cost": py_cost,
+            "py_duration": min_py_dur,
             "trace": trace_as_list,
         }
 
@@ -143,7 +143,7 @@ class AlignmentEvaluator:
             with open(output_path / "costs.csv", "a") as file:
                 file.write(
                     f"{result['cpp_cost']}, {result['cpp_duration']}, "
-                    # f"{result['py_cost']}, {result['py_duration']},
+                    f"{result['py_cost']}, {result['py_duration']},"
                     f"{result['trace']}\n"
                 )
 
@@ -176,9 +176,9 @@ class DataManager:
             event_logs = [list(x) for x in tuple_event_logs]
 
             for noise_threshold, file_tag in [
-                # (0.0, "_pt00"),
-                # (0.1, "_pt10"),
-                # (0.25, "_pt25"),
+                (0.0, "_pt00"),
+                (0.1, "_pt10"),
+                (0.25, "_pt25"),
                 (0.5, "_pt50"),
             ]:
                 ptml_file = self.ptml_path / f"{xes_file.stem}{file_tag}.ptml"
@@ -204,7 +204,7 @@ class DataManager:
                         "event_log": event_logs,
                         "process_tree": process_tree,
                         "process_tree_with_ids": process_tree_with_ids,
-                        "repeat": 1,
+                        "repeat": 5,
                         "result_path": cur_path,
                         "file_tag": file_tag,
                         "tree_name" : f"{xes_file.stem}{file_tag}",
