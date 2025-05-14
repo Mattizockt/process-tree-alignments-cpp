@@ -28,7 +28,7 @@ int AlignmentWrapper::align(const std::vector<std::string> newTrace) const
     std::span<const int> trace = intTrace;
 
     stop_flag.store(false);
-    int timeout_seconds = 60;
+    int timeout_seconds = 120;
 
     costTable.clear();
     std::future<size_t> result_future = std::async(std::launch::async, dynAlign, std::ref(processTree), std::ref(trace));

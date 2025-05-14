@@ -8,11 +8,16 @@ from pm4py.objects.log.obj import EventLog
 from pm4py.objects.process_tree.utils.generic import is_leaf
 from python_dyn_align import dyn_align
 import alignment
+from multiprocessing import Process, Queue
 import pandas as pd
 import pm4py
 import random
 import time
 import random
+
+def dyn_align_wrapper(benchmark, letters_dict, trace_as_list, subsequence_dict, result_queue):
+    result = dyn_align(benchmark, letters_dict, trace_as_list, subsequence_dict)
+    result_queue.put(result)
 
 class ProcessTreeManager:
     @staticmethod
@@ -102,26 +107,46 @@ class AlignmentEvaluator:
             cpp_duration = cpp_end - cpp_start
             min_cpp_dur = min(min_cpp_dur, cpp_duration)
 
-        py_start = time.time()
-        py_cost = dyn_align(
-            self.benchmark["process_tree_with_ids"],
-            self.letters_dict,
-            trace_as_list,
-            self.subsequence_dict,
-        )
-        py_end = time.time()
-        py_duration = py_end - py_start
-        min_py_dur = min(min_py_dur, py_duration)
+            result_queue = Queue()
+            p = Process(
+                target=dyn_align_wrapper,
+                args=(
+                    self.benchmark["process_tree_with_ids"],
+                    self.letters_dict,
+                    tuple(trace_as_list),
+                    self.subsequence_dict,
+                    result_queue
+                ),
+            )
+            py_start = time.time()
+            p.start()
+            p.join(120)
+            py_end = time.time()
+            if p.is_alive():
+                p.terminate()
+                p.join()
+                py_cost = -1
+                print("errror")
+            else:
+                try:
+                    py_cost = result_queue.get(timeout=5)
+                except result_queue.empty():
+                    print("error when retrieving alignment result")
+                    py_cost = -1
+            
+            p.close()
+            py_duration = py_end - py_start
+            min_py_dur = min(min_py_dur, py_duration)
 
-        return {
-            "cpp_cost": py_cost,
-            "cpp_duration": min_py_dur,
-            "cpp_cost": cpp_cost,
-            "cpp_duration": min_cpp_dur,
-            "py_cost": py_cost,
-            "py_duration": min_py_dur,
-            "trace": trace_as_list,
-        }
+            return {
+                "cpp_cost": py_cost,
+                "cpp_duration": min_py_dur,
+                "cpp_cost": cpp_cost,
+                "cpp_duration": min_cpp_dur,
+                "py_cost": py_cost,
+                "py_duration": min_py_dur,
+                "trace": trace_as_list,
+            }
 
     def run_evaluation(self, benchmark, result_path):
         self.benchmark = benchmark
@@ -171,7 +196,9 @@ class DataManager:
             print(f"Processing {xes_file.stem}")
 
             unparsed_event_logs = pm4py.read_xes(str(xes_file))
-            unsampled_event_logs = [x[0] for x in zip(*get_variants(unparsed_event_logs, None))]
+            unsampled_event_logs = [
+                x[0] for x in zip(*get_variants(unparsed_event_logs, None))
+            ]
             tuple_event_logs = random.sample(unsampled_event_logs, num_traces)
             event_logs = [list(x) for x in tuple_event_logs]
 
@@ -207,7 +234,7 @@ class DataManager:
                         "repeat": 5,
                         "result_path": cur_path,
                         "file_tag": file_tag,
-                        "tree_name" : f"{xes_file.stem}{file_tag}",
+                        "tree_name": f"{xes_file.stem}{file_tag}",
                     }
                 )
 
