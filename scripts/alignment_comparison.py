@@ -100,6 +100,8 @@ class AlignmentEvaluator:
     def compare_alignments(self, trace_as_list, repeats=1):
         min_cpp_dur = float("inf")
         min_py_dur = float("inf")
+        cpp_cost = -1
+        py_cost = -1
         for _ in range(repeats):
             cpp_start = time.time()
             cpp_cost = self.aligner.align(trace_as_list)
@@ -138,15 +140,13 @@ class AlignmentEvaluator:
             py_duration = py_end - py_start
             min_py_dur = min(min_py_dur, py_duration)
 
-            return {
-                "cpp_cost": py_cost,
-                "cpp_duration": min_py_dur,
-                "cpp_cost": cpp_cost,
-                "cpp_duration": min_cpp_dur,
-                "py_cost": py_cost,
-                "py_duration": min_py_dur,
-                "trace": trace_as_list,
-            }
+        return {
+            "cpp_cost": cpp_cost,
+            "cpp_duration": min_cpp_dur,
+            "py_cost": py_cost,
+            "py_duration": min_py_dur,
+            "trace": trace_as_list,
+        }
 
     def run_evaluation(self, benchmark, result_path):
         self.benchmark = benchmark
