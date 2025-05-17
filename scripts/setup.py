@@ -37,7 +37,8 @@ define_macros = [
     ("SEQUENCE_IMPROVEMENT", 1),
     ("TRACE_PRUNING", 1),
     ("TEMP_SEQUENCE_STORING", 1),
-    ("BETTER_HASH", 1)
+    ("BETTER_HASH", 1),
+    ("HEURISTIC", 0),
 ]
 
 ext_modules = [

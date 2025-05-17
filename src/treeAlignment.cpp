@@ -10,15 +10,31 @@
 #include <algorithm>
 #include <iostream>
 #include <unordered_map>
+#include <queue>
 
 using IntVec = std::vector<int>;
 using IntPair = std::pair<int, int>;
 
 std::atomic<bool> stop_flag;
 
-
 // Forward declaration necessary in C++ (unlike Python where functions can be called before definition)
 const int dynAlign(std::shared_ptr<TreeNode> node, const std::span<const int> trace);
+
+float estimateEdgeCost(IntPair edge, std::span<const int> trace, std::shared_ptr<TreeNode> node)
+{
+    const auto &activities = node->getActivities();
+    int commonActivities = 0;
+
+    for (int i = edge.first; i < edge.second; i++)
+    {
+        if (activities.count(trace[i]))
+        {
+            commonActivities++;
+        }
+    }
+
+    return (commonActivities * commonActivities) / (edge.second - edge.first);
+}
 
 // Helper function to get segments - analogous to get_segments_for_sequence in Python
 const std::vector<IntPair> getSegmentsForSequence(const std::span<const int> trace, std::shared_ptr<TreeNode> node)
@@ -103,6 +119,49 @@ const std::vector<PairCost> outgoingEdges(const IntPair v, const std::span<const
     return result;
 }
 
+std::vector<IntPair> outgoingEdges(const IntPair &vertex, std::shared_ptr<TreeNode> node, std::vector<size_t> &splitPositions, const std::span<const int> trace)
+{
+
+    std::vector<IntPair> result;
+    size_t const numChildren = node->getChildren().size();
+
+    if (vertex.first >= numChildren - 1)
+    {
+        return result;
+    }
+    if (vertex.first == numChildren - 2)
+    {
+        result.push_back({vertex.first + 1, splitPositions.back()});
+        return result;
+    }
+
+    // use binary search to find start where elements are bigger than
+    auto it = std::lower_bound(splitPositions.begin(), splitPositions.end(), vertex.second);
+    result.reserve(std::distance(it, splitPositions.end()));
+
+    std::vector<std::pair<float, IntPair>> scoredEdges;
+    scoredEdges.reserve(std::distance(it, splitPositions.end()));
+
+    for (; it != splitPositions.end(); ++it)
+    {
+        IntPair edge = {vertex.first + 1, *it};
+        float estimate = estimateEdgeCost({vertex.second, *it}, trace, node);
+        scoredEdges.push_back({estimate, edge});
+    }
+    std::sort(scoredEdges.begin(), scoredEdges.end(),
+              [](const auto &a, const auto &b)
+              {
+                  return a.first > b.first; // Sort in descending order
+              });
+
+    // printScoredEdges(scoredEdges);
+    for (const auto &scoredEdge : scoredEdges)
+    {
+        result.push_back(scoredEdge.second);
+    }
+    return result;
+}
+
 std::vector<IntPair> outgoingEdges(const IntPair &vertex, std::shared_ptr<TreeNode> node, std::vector<size_t> &splitPositions)
 {
     std::vector<IntPair> result;
@@ -112,7 +171,6 @@ std::vector<IntPair> outgoingEdges(const IntPair &vertex, std::shared_ptr<TreeNo
     {
         return result;
     }
-
     if (vertex.first == numChildren - 2)
     {
         result.push_back({vertex.first + 1, splitPositions.back()});
@@ -312,7 +370,11 @@ const int dynAlignSequence(const std::shared_ptr<TreeNode> node, const std::span
             continue;
         }
 
+        #if HEURISTIC == 1
+        for (const auto &nextEdge : outgoingEdges(currVertex, node, splitPositions, trace))
+        #else
         for (const auto &nextEdge : outgoingEdges(currVertex, node, splitPositions))
+        #endif
         {
             prevVertices[nextEdge] = currVertex;
             stack.push(nextEdge);
@@ -625,12 +687,35 @@ const int dynAlignLoop(const std::shared_ptr<TreeNode> node, const std::span<con
             }
             else
             {
-                // calculate outgoing edges
+// calculate outgoing edges
+#if HEURISTIC == 1
+                std::vector<std::pair<float, IntPair>> edgeScores;
+                edgeScores.reserve(n - totalEdge.second);
+
+                for (size_t j = totalEdge.second + 1; j <= n; j++)
+                {
+                    IntPair newEdge(totalEdge.second, j);
+                    float estimate = estimateEdgeCost(newEdge, trace, tempNode);
+                    edgeScores.emplace_back(estimate, newEdge);
+                }
+
+                std::sort(edgeScores.begin(), edgeScores.end(),
+                          [](const auto &a, const auto &b)
+                          {
+                              return a.first > b.first;
+                          });
+
+                for (const auto &edgeScore : edgeScores)
+                {
+                    stack.push(edgeScore.second);
+                }
+#else
                 for (size_t j = totalEdge.second + 1; j <= n; j++)
                 {
                     IntPair newEdge(totalEdge.second, j);
                     stack.push(newEdge);
                 }
+#endif
             }
         }
     }
@@ -734,7 +819,8 @@ const int dynAlignSilentActivity(const std::shared_ptr<TreeNode> node, const std
 
 const int dynAlign(const std::shared_ptr<TreeNode> node, std::span<const int> trace)
 {
-    if (stop_flag.load()) {
+    if (stop_flag.load())
+    {
         return -1;
     }
 
