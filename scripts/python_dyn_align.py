@@ -89,10 +89,10 @@ def dyn_align(pt_node, letters_dict, trace, subsequence_dict):
 
     original_trace = trace
     # Remove all letters from trace that are not contained in subtree
-    letters_in_tree = [x for x in trace if x in letters_dict[node_id]]
-    unmatched = len(trace) - len(letters_in_tree)
-    if unmatched > 0:
-        trace = tuple(letters_in_tree)
+    # letters_in_tree = [x for x in trace if x in letters_dict[node_id]]
+    # unmatched = len(trace) - len(letters_in_tree)
+    # if unmatched > 0:
+        # trace = tuple(letters_in_tree)
 
     if pt_node.operator is None:
         if is_tau_leaf(pt_node):
@@ -126,7 +126,8 @@ def dyn_align(pt_node, letters_dict, trace, subsequence_dict):
         raise ValueError(f"Operator {pt_node.operator} not supported!")
 
     # Done, add log moves for unmatched letters
-    costs = unmatched + costs
+    # costs = unmatched + costs
+    # costs = costs
 
     subsequence_dict[node_id].update({original_trace: costs})
 
@@ -192,13 +193,13 @@ def get_segments_for_sequence(trace, list_of_letters):
         # Our idea of L-/R-splits should generalize to this case. At the moment, a shortest-path algorithm is used to find the best partition
         return generate_partitions(n, number_of_children)
     elif number_of_children == 2:
-        left_letters = list_of_letters[0]
+        # left_letters = list_of_letters[0]
         right_letters = list_of_letters[1]
         segments = [(0, n), (n, 0)]
         split_positions = [
             i
             for i in range(1, n)
-            if trace[i] in right_letters and trace[i - 1] in left_letters
+            if trace[i] in right_letters and trace[i - 1] not in right_letters
         ]
         for i in split_positions:
             segments.append((i, n - i))
@@ -347,7 +348,8 @@ def _dyn_align_shuffle(pt_node, letters_dict, trace, subsequence_dict):
         for child, subtrace in zip(children, subtraces)
     ]
     # Return the sum of the costs and the number of unmatched events
-    return sum(costs)  # + unmatched
+    unmatched = len(trace) - sum(len(sub_trace) for sub_trace in subtraces)
+    return sum(costs)  + unmatched
 
 
 def _dyn_align_loop(pt_node, letters_dict, trace, subsequence_dict):

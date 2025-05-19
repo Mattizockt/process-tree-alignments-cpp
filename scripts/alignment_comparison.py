@@ -143,8 +143,8 @@ class AlignmentEvaluator:
         return {
             "cpp_cost": cpp_cost,
             "cpp_duration": min_cpp_dur,
-            # "py_cost": py_cost,
-            # "py_duration": min_py_dur,
+            "py_cost": py_cost,
+            "py_duration": min_py_dur,
             "trace": trace_as_list,
         }
 
@@ -168,7 +168,7 @@ class AlignmentEvaluator:
             with open(output_path / "costs.csv", "a") as file:
                 file.write(
                     f"{result['cpp_cost']}, {result['cpp_duration']}, "
-                    # f"{result['py_cost']}, {result['py_duration']},"
+                    f"{result['py_cost']}, {result['py_duration']},"
                     f"{result['trace']}\n"
                 )
 
@@ -203,10 +203,10 @@ class DataManager:
             event_logs = [list(x) for x in tuple_event_logs]
 
             for noise_threshold, file_tag in [
-                (0.0, "_pt00"),
+                # (0.0, "_pt00"),
                 (0.1, "_pt10"),
-                (0.25, "_pt25"),
-                (0.5, "_pt50"),
+                # (0.25, "_pt25"),
+                # (0.5, "_pt50"),
             ]:
                 ptml_file = self.ptml_path / f"{xes_file.stem}{file_tag}.ptml"
 
