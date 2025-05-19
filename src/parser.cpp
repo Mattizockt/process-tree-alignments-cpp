@@ -259,6 +259,7 @@ std::vector<int> convertStringTrace(const std::vector<std::string> &trace)
         }
         else
         {
+            intTrace.push_back(-1);
             std::cerr << "Activity not found in mapping: " << activity << std::endl;
         }
     }

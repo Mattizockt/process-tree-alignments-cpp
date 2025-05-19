@@ -33,7 +33,7 @@ float estimateEdgeCost(IntPair edge, std::span<const int> trace, std::shared_ptr
         }
     }
 
-    return (commonActivities * commonActivities) / (edge.second - edge.first);
+    return (2 * commonActivities) / (edge.second - edge.first);
 }
 
 // Helper function to get segments - analogous to get_segments_for_sequence in Python
@@ -51,21 +51,14 @@ const std::vector<IntPair> getSegmentsForSequence(const std::span<const int> tra
         {traceSize, 0}};
 
     IntVec splitPositions;
-    const auto leftActivities = children[0]->getActivities();
     const auto rightActivities = children[1]->getActivities();
 
-    for (size_t i = 1; i < traceSize; i++)
+    for (size_t i = 1; i < traceSize; ++i)
     {
-        if (rightActivities.count(trace[i]) &&
-            leftActivities.count(trace[i - 1]))
+        if (rightActivities.count(trace[i]) && !rightActivities.count(trace[i - 1]))
         {
-            splitPositions.push_back(i);
+            segments.push_back({i, traceSize - i});
         }
-    }
-
-    for (const auto splitPosition : splitPositions)
-    {
-        segments.push_back({splitPosition, traceSize - splitPosition});
     }
 
     return segments;
@@ -370,11 +363,11 @@ const int dynAlignSequence(const std::shared_ptr<TreeNode> node, const std::span
             continue;
         }
 
-        #if HEURISTIC == 1
+#if HEURISTIC == 1
         for (const auto &nextEdge : outgoingEdges(currVertex, node, splitPositions, trace))
-        #else
+#else
         for (const auto &nextEdge : outgoingEdges(currVertex, node, splitPositions))
-        #endif
+#endif
         {
             prevVertices[nextEdge] = currVertex;
             stack.push(nextEdge);
@@ -757,7 +750,8 @@ const int dynAlignLoop(const std::shared_ptr<TreeNode> node, const std::span<con
             }
 
             int optimalCost = qrCosts[edge];
-            for (size_t j = edge.first + 1; j < edge.second; j++)
+            for (size_t j = edge.first; j <= edge.second; j++)
+            // for (size_t j = edge.first + 1; j < edge.second; j++)
             {
                 const int newCost = qrCosts[{edge.first, j}] + qrCosts[{j, edge.second}];
                 if (newCost < optimalCost)
