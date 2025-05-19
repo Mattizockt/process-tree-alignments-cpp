@@ -143,8 +143,8 @@ class AlignmentEvaluator:
         return {
             "cpp_cost": cpp_cost,
             "cpp_duration": min_cpp_dur,
-            "py_cost": py_cost,
-            "py_duration": min_py_dur,
+            # "py_cost": py_cost,
+            # "py_duration": min_py_dur,
             "trace": trace_as_list,
         }
 
@@ -168,7 +168,7 @@ class AlignmentEvaluator:
             with open(output_path / "costs.csv", "a") as file:
                 file.write(
                     f"{result['cpp_cost']}, {result['cpp_duration']}, "
-                    f"{result['py_cost']}, {result['py_duration']},"
+                    # f"{result['py_cost']}, {result['py_duration']},"
                     f"{result['trace']}\n"
                 )
 
@@ -231,7 +231,7 @@ class DataManager:
                         "event_log": event_logs,
                         "process_tree": process_tree,
                         "process_tree_with_ids": process_tree_with_ids,
-                        "repeat": 5,
+                        "repeat": 1,
                         "result_path": cur_path,
                         "file_tag": file_tag,
                         "tree_name": f"{xes_file.stem}{file_tag}",
