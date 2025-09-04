@@ -271,7 +271,6 @@ const int dynAlignSequence(const std::shared_ptr<TreeNode> node, const std::span
             const auto leftCost = dynAlign(children[0], firstPart);
 
 #if ENABLE_UPPER_BOUND == 1
-
             if (leftCost >= bestCost)
             {
                 continue;
@@ -287,7 +286,6 @@ const int dynAlignSequence(const std::shared_ptr<TreeNode> node, const std::span
     }
 
 #if SEQUENCE_IMPROVEMENT == 1
-
     std::unordered_map<int, size_t> activityToChildIndex;
     size_t childIndex = 0;
     for (const auto &child : children)
@@ -377,8 +375,6 @@ const int dynAlignSequence(const std::shared_ptr<TreeNode> node, const std::span
     return bestCost;
 
 #else
-
-    // std::cout << "3" << std::endl;
 
     std::vector<IntPair> vertices;
 

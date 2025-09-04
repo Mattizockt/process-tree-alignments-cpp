@@ -1,6 +1,5 @@
 .vscode/
 build/
-data
 evaluation
 myenv   
 output/
@@ -8,4 +7,3 @@ scripts/__pycache__
 scripts/alignment.cpython-312-x86_64-linux-gnu.so
 scripts/alignment.egg-info
 out.txt
-remote_res

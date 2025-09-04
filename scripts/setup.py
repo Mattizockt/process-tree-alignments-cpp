@@ -2,7 +2,7 @@ from setuptools import setup, Extension
 from pybind11.setup_helpers import Pybind11Extension, build_ext
 import os
 
-# Use C++20 standard to match CMake configuration
+# Use C++20 standard and enable -O3 optimization
 extra_compile_args = ["-std=c++20"]
 
 # Get the directory where setup.py is located
@@ -31,14 +31,14 @@ include_dirs = [
 define_macros = [
     ("PROJECT_SOURCE_DIR", f'"{PROJECT_ROOT}"'),
     ("PROJECT_OUTPUT_DIR", f'"{PROJECT_OUTPUT_DIR}"'),
-    ("BRUTE_FORCE", 0),
-    ("ENABLE_UPPER_BOUND", 0),
-    ("DFS_LOOP", 0),
-    ("SEQUENCE_IMPROVEMENT", 0),
-    ("TRACE_PRUNING", 0),
-    ("TEMP_SEQUENCE_STORING", 0),
-    ("BETTER_HASH", 1),
+    ("BRUTE_FORCE", 1),
+    ("ENABLE_UPPER_BOUND", 1),
+    ("DFS_LOOP", 1),
+    ("SEQUENCE_IMPROVEMENT", 1),
     ("HEURISTIC", 0),
+    ("TRACE_PRUNING", 1),
+    ("TEMP_SEQUENCE_STORING", 1),
+    ("BETTER_HASH", 1),
 ]
 
 ext_modules = [
@@ -46,7 +46,7 @@ ext_modules = [
         "alignment",
         sources=source_files,
         include_dirs=include_dirs,
-        extra_compile_args=extra_compile_args,
+        extra_compile_args=extra_compile_args, # -O3 is now included here
         define_macros=define_macros,
     ),
 ]
@@ -54,7 +54,7 @@ ext_modules = [
 setup(
     name="alignment",
     version="0.1.0",
-    author="Your Name",
+    author="Your Name", 
     author_email="your.email@example.com",
     description="Python bindings for tree alignment",
     ext_modules=ext_modules,

@@ -20,6 +20,7 @@ AlignmentWrapper::AlignmentWrapper()
 void AlignmentWrapper::loadTree(std::string tree)
 {
     processTree = parseProcessTreeString(tree);
+    processTree->printTree();
 }
 
 int AlignmentWrapper::align(const std::vector<std::string> newTrace) const

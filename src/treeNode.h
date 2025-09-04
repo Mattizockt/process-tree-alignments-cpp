@@ -24,13 +24,13 @@ struct SpanHash
             hash = ((hash << 5) + hash) + vec[i];
         }
 
-        if (!vec.empty())
-        {
-            hash ^= (vec[0] * 7919) << 16;
-            hash ^= (vec[vec.size() - 1] * 8731) << 8;
-        }
+        // if (!vec.empty())
+        // {
+        //     hash ^= (vec[0] * 7919) << 16;
+        //     hash ^= (vec[vec.size() - 1] * 8731) << 8;
+        // }
 
-        hash ^= vec.size() * 31;
+        // hash ^= vec.size() * 31;
 
         return hash;
         #else 

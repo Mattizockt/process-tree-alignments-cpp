@@ -36,9 +36,9 @@ def create_ptml():
         if not (file := ptml_path / f"{xes_file.stem}.ptml").is_file():
             # Define noise threshold levels and corresponding filename suffixes
             ptml_variants = [
-                # (0.0, "_pt00"),  # No noise filtering (0%)
-                # (0.1, "_pt10"),  # Low noise filtering (10%)
-                # (0.25, "_pt25"),  # Medium noise filtering (25%)
+                (0.0, "_pt00"),  # No noise filtering (0%)
+                (0.1, "_pt10"),  # Low noise filtering (10%)
+                (0.25, "_pt25"),  # Medium noise filtering (25%)
                 (0.5, "_pt50"),  # High noise filtering (50%)
             ]
 
@@ -48,7 +48,7 @@ def create_ptml():
                     ptml_file := ptml_path / f"{xes_file.stem}{file_tag}.ptml"
                 ).is_file():
                     continue
-
+                    
                 # Discover process tree using inductive miner with specified noise threshold
                 process_tree = discover_process_tree_inductive(
                     event_log, noise_threshold=noise_threshold
