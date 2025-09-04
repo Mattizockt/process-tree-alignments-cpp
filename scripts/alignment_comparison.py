@@ -108,42 +108,42 @@ class AlignmentEvaluator:
             cpp_duration = cpp_end - cpp_start
             min_cpp_dur = min(min_cpp_dur, cpp_duration)
 
-            # result_queue = Queue()
-            # p = Process(
-            #     target=dyn_align_wrapper,
-            #     args=(
-            #         self.benchmark["process_tree_with_ids"],
-            #         self.letters_dict,
-            #         tuple(trace_as_list),
-            #         self.subsequence_dict,
-            #         result_queue
-            #     ),
-            # )
-            # py_start = time.time()
-            # p.start()
-            # p.join(120)
-            # py_end = time.time()
-            # if p.is_alive():
-            #     p.terminate()
-            #     p.join()
-            #     py_cost = -1
-            #     print("errror")
-            # else:
-            #     try:
-            #         py_cost = result_queue.get(timeout=5)
-            #     except result_queue.empty():
-            #         print("error when retrieving alignment result")
-            #         py_cost = -1
+            result_queue = Queue()
+            p = Process(
+                target=dyn_align_wrapper,
+                args=(
+                    self.benchmark["process_tree_with_ids"],
+                    self.letters_dict,
+                    tuple(trace_as_list),
+                    self.subsequence_dict,
+                    result_queue
+                ),
+            )
+            py_start = time.time()
+            p.start()
+            p.join(120)
+            py_end = time.time()
+            if p.is_alive():
+                p.terminate()
+                p.join()
+                py_cost = -1
+                print("errror")
+            else:
+                try:
+                    py_cost = result_queue.get(timeout=5)
+                except result_queue.empty():
+                    print("error when retrieving alignment result")
+                    py_cost = -1
             
-            # p.close()
-            # py_duration = py_end - py_start
-            # min_py_dur = min(min_py_dur, py_duration)
+            p.close()
+            py_duration = py_end - py_start
+            min_py_dur = min(min_py_dur, py_duration)
 
         return {
             "cpp_cost": cpp_cost,
             "cpp_duration": min_cpp_dur,
-            # "py_cost": py_cost,
-            # "py_duration": min_py_dur,
+            "py_cost": py_cost,
+            "py_duration": min_py_dur,
             "trace": trace_as_list,
         }
 
@@ -167,7 +167,7 @@ class AlignmentEvaluator:
             with open(output_path / "costs.csv", "a") as file:
                 file.write(
                     f"{result['cpp_cost']}, {result['cpp_duration']}, "
-                    # f"{result['py_cost']}, {result['py_duration']},"
+                    f"{result['py_cost']}, {result['py_duration']},"
                     f"{result['trace']}\n"
                 )
 
@@ -205,8 +205,8 @@ class DataManager:
             for noise_threshold, file_tag in [
                 # (0.0, "_pt00"),
                 # (0.1, "_pt10"),
-                (0.25, "_pt25"),
-                # (0.5, "_pt50"),
+                # (0.25, "_pt25"),
+                (0.5, "_pt50"),
             ]:
                 ptml_file = self.ptml_path / f"{xes_file.stem}{file_tag}.ptml"
 

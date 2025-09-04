@@ -2,22 +2,10 @@ from pathlib import Path
 from pathlib import Path
 from pm4py import discover_process_tree_inductive
 import csv
-import json
 import matplotlib.pyplot as plt
 import numpy as np
 import pm4py
 import pm4py
-from pm4py.objects.conversion.process_tree.converter import (
-    apply as process_tree_to_petri_net,
-)
-from pm4py.algo.conformance.alignments.petri_net.algorithm import (
-    apply as pm4py_align_petri_net,
-    __get_variants_structure as get_variants,
-)
-from pm4py.algo.conformance.alignments.process_tree.algorithm import (
-    apply as pm4py_align_process_tree,
-)
-
 
 # Generate process trees (.ptml files) with different noise thresholds from a single event log (.xes)
 # For each event log, this function creates 4 variations of process tree models with increasing noise tolerance
@@ -169,9 +157,4 @@ paths = [
     "/home/matthias/rwth/ba/process-tree-alignments-cpp/output/c++_best/BPI_Challenge_2012_pt50/costs.csv",
 ]
 
-# names = ["main", "C++"]
-# summarize_output(paths, names, 4382)
-
 create_ptml()
-# visualize_tree("./data/ptml/BPI_Challenge_2012_pt50.ptml")
-# visualize_tree("./data/ptml/Road_Traffic_Fine_Management_Process_pt50.ptml")
