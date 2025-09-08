@@ -31,14 +31,6 @@ include_dirs = [
 define_macros = [
     ("PROJECT_SOURCE_DIR", f'"{PROJECT_ROOT}"'),
     ("PROJECT_OUTPUT_DIR", f'"{PROJECT_OUTPUT_DIR}"'),
-    ("BRUTE_FORCE", 1),
-    ("ENABLE_UPPER_BOUND", 1),
-    ("DFS_LOOP", 1),
-    ("SEQUENCE_IMPROVEMENT", 1),
-    ("HEURISTIC", 0),
-    ("TRACE_PRUNING", 1),
-    ("TEMP_SEQUENCE_STORING", 1),
-    ("BETTER_HASH", 0),
 ]
 
 ext_modules = [

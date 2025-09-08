@@ -43,8 +43,6 @@ int AlignmentWrapper::align(const std::vector<std::string> newTrace) const
         stop_flag.store(true);
         return -1;
     }
-    // const size_t cost = dynAlign(processTree, trace);
-    // return cost;
 }
 
 PYBIND11_MODULE(alignment, m)

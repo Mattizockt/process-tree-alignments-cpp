@@ -20,21 +20,6 @@ std::atomic<bool> stop_flag;
 // Forward declaration necessary in C++ (unlike Python where functions can be called before definition)
 const int dynAlign(std::shared_ptr<TreeNode> node, const std::span<const int> trace);
 
-float estimateEdgeCost(IntPair edge, std::span<const int> trace, std::shared_ptr<TreeNode> node)
-{
-    const auto &activities = node->getActivities();
-    int commonActivities = 0;
-
-    for (int i = edge.first; i < edge.second; i++)
-    {
-        if (activities.count(trace[i]))
-        {
-            commonActivities++;
-        }
-    }
-
-    return (2 * commonActivities) / (edge.second - edge.first);
-}
 
 // Helper function to get segments - analogous to get_segments_for_sequence in Python
 const std::vector<IntPair> getSegmentsForSequence(const std::span<const int> trace, std::shared_ptr<TreeNode> node)
@@ -112,48 +97,6 @@ const std::vector<PairCost> outgoingEdges(const IntPair v, const std::span<const
     return result;
 }
 
-std::vector<IntPair> outgoingEdges(const IntPair &vertex, std::shared_ptr<TreeNode> node, std::vector<size_t> &splitPositions, const std::span<const int> trace)
-{
-
-    std::vector<IntPair> result;
-    size_t const numChildren = node->getChildren().size();
-
-    if (vertex.first >= numChildren - 1)
-    {
-        return result;
-    }
-    if (vertex.first == numChildren - 2)
-    {
-        result.push_back({vertex.first + 1, splitPositions.back()});
-        return result;
-    }
-
-    // use binary search to find start where elements are bigger than
-    auto it = std::lower_bound(splitPositions.begin(), splitPositions.end(), vertex.second);
-    result.reserve(std::distance(it, splitPositions.end()));
-
-    std::vector<std::pair<float, IntPair>> scoredEdges;
-    scoredEdges.reserve(std::distance(it, splitPositions.end()));
-
-    for (; it != splitPositions.end(); ++it)
-    {
-        IntPair edge = {vertex.first + 1, *it};
-        float estimate = estimateEdgeCost({vertex.second, *it}, trace, node);
-        scoredEdges.push_back({estimate, edge});
-    }
-    std::sort(scoredEdges.begin(), scoredEdges.end(),
-              [](const auto &a, const auto &b)
-              {
-                  return a.first > b.first; // Sort in descending order
-              });
-
-    // printScoredEdges(scoredEdges);
-    for (const auto &scoredEdge : scoredEdges)
-    {
-        result.push_back(scoredEdge.second);
-    }
-    return result;
-}
 
 std::vector<IntPair> outgoingEdges(const IntPair &vertex, std::shared_ptr<TreeNode> node, std::vector<size_t> &splitPositions)
 {
@@ -232,8 +175,6 @@ const int dynAlignSequence(const std::shared_ptr<TreeNode> node, const std::span
         return dynAlign(children[0], trace);
     }
 
-#if BRUTE_FORCE == 1
-
     size_t pos = 0;
     size_t old_pos = 0;
     bestCost = 0;
@@ -260,8 +201,6 @@ const int dynAlignSequence(const std::shared_ptr<TreeNode> node, const std::span
         bestCost += trace.size() - pos;
     }
 
-#endif
-
     if (numChildren == 2)
     {
         const auto segments = getSegmentsForSequence(trace, node);
@@ -270,12 +209,11 @@ const int dynAlignSequence(const std::shared_ptr<TreeNode> node, const std::span
             const auto firstPart = trace.subspan(0, split);
             const auto leftCost = dynAlign(children[0], firstPart);
 
-#if ENABLE_UPPER_BOUND == 1
             if (leftCost >= bestCost)
             {
                 continue;
             }
-#endif
+
             const auto secondPart = trace.subspan(split, traceLength - split);
             const auto rightCost = dynAlign(children[1], secondPart);
 
@@ -285,7 +223,6 @@ const int dynAlignSequence(const std::shared_ptr<TreeNode> node, const std::span
         return bestCost;
     }
 
-#if SEQUENCE_IMPROVEMENT == 1
     std::unordered_map<int, size_t> activityToChildIndex;
     size_t childIndex = 0;
     for (const auto &child : children)
@@ -361,11 +298,7 @@ const int dynAlignSequence(const std::shared_ptr<TreeNode> node, const std::span
             continue;
         }
 
-#if HEURISTIC == 1
-        for (const auto &nextEdge : outgoingEdges(currVertex, node, splitPositions, trace))
-#else
         for (const auto &nextEdge : outgoingEdges(currVertex, node, splitPositions))
-#endif
         {
             prevVertices[nextEdge] = currVertex;
             stack.push(nextEdge);
@@ -373,68 +306,6 @@ const int dynAlignSequence(const std::shared_ptr<TreeNode> node, const std::span
     }
 
     return bestCost;
-
-#else
-
-    std::vector<IntPair> vertices;
-
-    for (size_t i = 0; i <= numChildren; ++i)
-    {
-        for (size_t j = 0; j <= traceLength; ++j)
-        {
-            if ((i > 0 && i < numChildren) || (i == 0 && j == 0) || (i == numChildren && j == traceLength))
-            {
-                vertices.push_back(std::make_pair(i, j));
-            }
-        }
-    }
-
-    IntPair start(0, 0);
-    IntPair end(numChildren, traceLength);
-
-    std::unordered_map<IntPair, int, PairHash> dijkstraCosts;
-
-    for (const auto vertex : vertices)
-    {
-        dijkstraCosts[vertex] = std::numeric_limits<int>::max();
-    }
-    dijkstraCosts[start] = 0;
-    std::unordered_set<IntPair, PairHash> visited;
-
-    const auto verticesSize = vertices.size();
-    while (visited.size() < verticesSize)
-    {
-        IntPair current;
-        int min_cost = std::numeric_limits<int>::max();
-
-        for (const auto &v : vertices)
-        {
-            if (visited.find(v) == visited.end() && dijkstraCosts[v] <= min_cost)
-            {
-                min_cost = dijkstraCosts[v];
-                current = v;
-            }
-        }
-        visited.insert(current);
-#if ENABLE_UPPER_BOUND == 1
-        if (dijkstraCosts[current] > bestCost)
-        {
-            continue;
-        }
-        for (const auto edge : outgoingEdges(current, trace, node, bestCost))
-#else
-        for (const auto edge : outgoingEdges(current, trace, node))
-#endif
-        {
-            if (dijkstraCosts[current] != std::numeric_limits<int>::max())
-            {
-                dijkstraCosts[edge.second_pair] = std::min(dijkstraCosts[edge.second_pair], dijkstraCosts[current] + edge.cost);
-            }
-        }
-    }
-
-    return dijkstraCosts[end];
-#endif
 }
 
 // Equivalent to Python's _dyn_align_shuffle
@@ -504,7 +375,6 @@ const int dynAlignLoop(const std::shared_ptr<TreeNode> node, const std::span<con
     // TODO upperbound is not used yet
     int upperBound = std::numeric_limits<int>::max();
 
-#if BRUTE_FORCE == 1
     const auto &rChildrenActv = children[0]->getActivities();
     const auto firstTraceVal = trace[0];
     const auto lastTraceVal = trace[n - 1];
@@ -558,12 +428,9 @@ const int dynAlignLoop(const std::shared_ptr<TreeNode> node, const std::span<con
     {
         return 0;
     }
-#endif
 
     // QR bits are aligned by introducing a temporary sequence node
     // and using alignSequence
-
-#if TEMP_SEQUENCE_STORING == 1
     const int tempNodeId = node->getId() * -1;
     std::shared_ptr<TreeNode> tempNode;
 
@@ -577,7 +444,6 @@ const int dynAlignLoop(const std::shared_ptr<TreeNode> node, const std::span<con
         std::cerr << "Didn't find tempnode for node with id: " << std::to_string(static_cast<int>(node->getId())) << std::endl;
         tempNode = std::make_shared<TreeNode>(SEQUENCE, tempNodeId);
         tempNodeMap[tempNodeId] = tempNode;
-#if TRACE_PRUNING == 1
         std::unordered_set<int> allActivities;
         allActivities.reserve(children[0]->getActivities().size() + children[1]->getActivities().size());
 
@@ -587,12 +453,8 @@ const int dynAlignLoop(const std::shared_ptr<TreeNode> node, const std::span<con
             std::inserter(allActivities, allActivities.begin()));
 
         tempNode->setActivities(allActivities);
-#endif
     }
-#else
     std::shared_ptr<TreeNode> tempNode = std::make_shared<TreeNode>(SEQUENCE);
-
-#if TRACE_PRUNING == 1
     std::unordered_set<int> allActivities;
     allActivities.reserve(children[0]->getActivities().size() + children[1]->getActivities().size());
 
@@ -602,12 +464,8 @@ const int dynAlignLoop(const std::shared_ptr<TreeNode> node, const std::span<con
         std::inserter(allActivities, allActivities.begin()));
 
     tempNode->setActivities(allActivities);
-#endif
     tempNode->addChild(children[1]);
     tempNode->addChild(children[0]);
-#endif
-
-#if DFS_LOOP == 1
     std::unordered_map<IntPair, int, PairHash>
         qrCosts;
 
@@ -677,111 +535,15 @@ const int dynAlignLoop(const std::shared_ptr<TreeNode> node, const std::span<con
             else
             {
 // calculate outgoing edges
-#if HEURISTIC == 1
-                std::vector<std::pair<float, IntPair>> edgeScores;
-                edgeScores.reserve(n - totalEdge.second);
-
-                for (size_t j = totalEdge.second + 1; j <= n; j++)
-                {
-                    IntPair newEdge(totalEdge.second, j);
-                    float estimate = estimateEdgeCost(newEdge, trace, tempNode);
-                    edgeScores.emplace_back(estimate, newEdge);
-                }
-
-                std::sort(edgeScores.begin(), edgeScores.end(),
-                          [](const auto &a, const auto &b)
-                          {
-                              return a.first > b.first;
-                          });
-
-                for (const auto &edgeScore : edgeScores)
-                {
-                    stack.push(edgeScore.second);
-                }
-#else
                 for (size_t j = totalEdge.second + 1; j <= n; j++)
                 {
                     IntPair newEdge(totalEdge.second, j);
                     stack.push(newEdge);
                 }
-#endif
             }
         }
     }
     return upperBound;
-
-#else
-
-    std::vector<IntPair> edges;
-    for (size_t i = 0; i <= n; ++i)
-    {
-        for (size_t j = i; j <= n; ++j)
-        {
-            edges.emplace_back(i, j);
-        }
-    }
-
-    std::unordered_map<IntPair, int, PairHash> qrCosts;
-    for (const auto &edge : edges)
-    {
-        if (edge.first == edge.second)
-        {
-            qrCosts[edge] = 0;
-            continue;
-        }
-        const auto subTrace = trace.subspan(edge.first, edge.second - edge.first);
-        const int cost = dynAlign(tempNode, subTrace);
-        qrCosts[edge] = cost;
-    }
-
-    for (size_t index = 0; index < n; index++)
-    {
-        bool change = false;
-        for (const auto &edge : edges)
-        {
-
-            if (qrCosts[edge] == 0)
-            {
-                continue;
-            }
-
-            int optimalCost = qrCosts[edge];
-            for (size_t j = edge.first; j <= edge.second; j++)
-            // for (size_t j = edge.first + 1; j < edge.second; j++)
-            {
-                const int newCost = qrCosts[{edge.first, j}] + qrCosts[{j, edge.second}];
-                if (newCost < optimalCost)
-                {
-                    optimalCost = newCost;
-                    change = true;
-                }
-            }
-            qrCosts[edge] = optimalCost;
-        }
-        if (!change)
-        {
-            break;
-        }
-    }
-
-    std::unordered_map<size_t, int> rCosts(n);
-    for (size_t i = 0; i <= n; i++)
-    {
-        rCosts[i] = dynAlign(children[0], trace.subspan(0, i));
-    }
-
-    int minimalCosts = std::numeric_limits<int>::max();
-    for (size_t i = 0; i <= n; i++)
-    {
-        const int costs = rCosts[i] + qrCosts[{i, n}];
-        if (costs < minimalCosts)
-        {
-            minimalCosts = costs;
-        }
-    }
-
-    return minimalCosts;
-#endif
 }
 
 // Activity node alignment - equivalent to _dyn_align_leaf in Python
@@ -825,7 +587,6 @@ const int dynAlign(const std::shared_ptr<TreeNode> node, std::span<const int> tr
         return it->second;
     }
 
-#if TRACE_PRUNING == 1
     size_t aliens = 0;
     auto &activities = node->getActivities();
     std::vector<int> prunedTrace;
@@ -848,7 +609,6 @@ const int dynAlign(const std::shared_ptr<TreeNode> node, std::span<const int> tr
             break;
         }
     }
-#endif
 
     int costs;
     switch (node->getOperation())
@@ -875,7 +635,6 @@ const int dynAlign(const std::shared_ptr<TreeNode> node, std::span<const int> tr
         throw std::runtime_error("Unknown node operation: " + std::to_string(node->getOperation()));
     }
 
-#if TRACE_PRUNING
     if (!prunedTrace.empty())
     {
         costTable[nodeId][std::move(prunedTrace)] = costs;
@@ -886,9 +645,4 @@ const int dynAlign(const std::shared_ptr<TreeNode> node, std::span<const int> tr
         costTable[nodeId][std::move(traceVector)] = costs;
     }
     return costs + aliens;
-#else
-    const std::vector<int> traceVector(trace.begin(), trace.end());
-    costTable[nodeId][std::move(traceVector)] = costs;
-    return costs;
-#endif
 }

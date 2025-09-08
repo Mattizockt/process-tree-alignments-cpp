@@ -11,4 +11,4 @@ extern std::unordered_map<int, std::shared_ptr<TreeNode>> tempNodeMap;
 
 std::vector<int> convertStringTrace(const std::vector<std::string> &trace);
 std::shared_ptr<TreeNode> parseProcessTreeString(const std::string& treeString);
-#endif // PARSER_H
+#endif PARSER_H

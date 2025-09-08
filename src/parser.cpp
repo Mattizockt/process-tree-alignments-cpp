@@ -210,7 +210,6 @@ std::shared_ptr<TreeNode> parseNode(const std::string &treeString, size_t &pos)
         {
             throw std::runtime_error("Loop node does not exactly have 2 children");
         }
-#if TEMP_SEQUENCE_STORING == 1
         else
         {
             const int tempNodeId = node->getId() * -1;
@@ -218,7 +217,6 @@ std::shared_ptr<TreeNode> parseNode(const std::string &treeString, size_t &pos)
             tempNodeMap[tempNodeId] = tempNode;
             tempNode->addChild(children[1]);
             tempNode->addChild(children[0]);
-#if TRACE_PRUNING == 1
             std::unordered_set<int> allActivities;
             allActivities.reserve(children[0]->getActivities().size() + children[1]->getActivities().size());
 
@@ -228,9 +226,7 @@ std::shared_ptr<TreeNode> parseNode(const std::string &treeString, size_t &pos)
                 std::inserter(allActivities, allActivities.begin()));
 
             tempNode->setActivities(allActivities);
-#endif
         }
-#endif
     }
 
     // not very efficient for frequent tree building but fine if align many traces with a tree

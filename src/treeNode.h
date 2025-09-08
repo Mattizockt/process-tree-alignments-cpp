@@ -16,61 +16,23 @@ struct SpanHash
     // Hash for vector<int> keys
     std::size_t operator()(const std::vector<int> &vec) const
     {
-        #if BETTER_HASH == 1
-        size_t hash = 5381;
-
-        for (size_t i = 0; i < vec.size(); ++i)
-        {
-            hash = ((hash << 5) + hash) + vec[i];
-        }
-
-        // if (!vec.empty())
-        // {
-        //     hash ^= (vec[0] * 7919) << 16;
-        //     hash ^= (vec[vec.size() - 1] * 8731) << 8;
-        // }
-
-        // hash ^= vec.size() * 31;
-
-        return hash;
-        #else 
         std::size_t seed = vec.size();
         for (auto &i : vec)
         {
             seed ^= i + 0x9e3779b9 + (seed << 6) + (seed >> 2);
         }
         return seed;
-        #endif
     }
 
     // Hash for span<const int> lookups
     std::size_t operator()(std::span<const int> vec) const
     {
-        #if BETTER_HASH == 1
-        size_t hash = 5381;
-
-        for (size_t i = 0; i < vec.size(); ++i)
-        {
-            hash = ((hash << 5) + hash) + vec[i];
-        }
-
-        if (!vec.empty())
-        {
-            hash ^= (vec[0] * 7919) << 16;
-            hash ^= (vec[vec.size() - 1] * 8731) << 8;
-        }
-
-        hash ^= vec.size() * 31;
-
-        return hash;
-        #else 
         std::size_t seed = vec.size();
         for (auto &i : vec)
         {
             seed ^= i + 0x9e3779b9 + (seed << 6) + (seed >> 2);
         }
         return seed;
-        #endif
     }
 };
 
